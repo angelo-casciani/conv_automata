@@ -29,11 +29,11 @@ class AnswerVerificationOracle:
     """
 
     def add_prompt_expected_answer_pair(self, prompt, expected_answer):
-        """Add a prompt-expected answer pair to the oracle."""
+        """Add a prompt-expected_answer pair to the oracle."""
         self.prompt_expected_answer_pairs.append((prompt, expected_answer))
-        if expected_answer == "Yes":
+        if expected_answer == "True":
             self.positives += 1
-        elif expected_answer == "No":
+        elif expected_answer == "False":
             self.negatives += 1
 
     """ Verifying the answer correctness.
@@ -67,12 +67,6 @@ class AnswerVerificationOracle:
                 for word in model_answer.split():
                     if expected_answer.lower() in word.strip(' .,').lower():
                         result['verification_result'] = True
-                """
-                if result['verification_result'] == False:
-                    print(f'\n++++++++++\nRAG Answer: {model_answer}\nExpected Answer: {expected_answer}.\n++++++++++')
-                    human_feedback = input('t - True or f - False: ')
-                    if human_feedback == 't': result['verification_result'] = True
-                """
                 print('Answer:' + model_answer + ' - Result: ' + str(result['verification_result']))
                 break
 
@@ -92,12 +86,12 @@ class AnswerVerificationOracle:
 
         for result in self.results:
             if result['verification_result']:
-                if result['expected_answer'] == 'Yes':
+                if result['expected_answer'] == 'True':
                     self.true_positives += 1
                 else:
                     self.true_negatives += 1
             else:
-                if result['expected_answer'] == 'Yes':
+                if result['expected_answer'] == 'True':
                     self.false_negatives += 1
                 else:
                     self.false_positives += 1
@@ -139,4 +133,3 @@ class AnswerVerificationOracle:
                 file.write(f"Expected Answer: {result['expected_answer']}\n")
                 file.write(f"Verification Result: {result['verification_result']}\n")
                 file.write("\n#####################################################################################\n")
-                

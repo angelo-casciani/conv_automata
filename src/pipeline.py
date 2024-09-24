@@ -2,7 +2,7 @@ from langchain_community.embeddings.huggingface import HuggingFaceEmbeddings
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain_core.prompts import PromptTemplate
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, BitsAndBytesConfig, AutoConfig
-from torch import cuda, bfloat16
+from torch import bfloat16
 
 import datetime
 from utility import log_to_file
@@ -99,15 +99,19 @@ def generate_prompt_template(model_id):
 
     # template = """{system_message}\n\nContext: {context}\n\nQuestion: {question}\n\nAnswer: """
 
-    template_llama3 = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-    {system_message}<|eot_id|>
-    <|start_header_id|>user<|end_header_id|>
-    <|start_context_id|>
-    {context}
-    <|end_context_id|>
-    <|start_question_id|>
-    {question}
-    <|end_question_id|><|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+    # template_llama3 = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+    # {system_message}<|eot_id|>
+    # <|start_header_id|>user<|end_header_id|>
+    # <|start_context_id|>
+    # {context}
+    # <|end_context_id|>
+    # <|start_question_id|>
+    # {question}
+    # <|end_question_id|><|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+
+    template_llama3 = """<|begin_of_text|><|start_header_id|>system<|end_header_id|> {system_message}
+    <|eot_id|><|start_header_id|>user<|end_header_id|>
+    Here is the question: {question} \n <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
     if 'meta-llama/Meta-Llama-3' in model_id or 'llama3dot1' in model_id:
         prompt = PromptTemplate.from_template(template_llama3)
@@ -131,10 +135,15 @@ def produce_answer(question, llm_chain, vectdb, choice, num_chunks, live=False):
     if not live:
         sys_mess = sys_mess + " Answer 'yes' if true or 'no' if false."
         # "If you don't know the answer, just say that you don't know, don't try to make up an answer."
-    context = retrieve_context(vectdb, question, num_chunks)
-    complete_answer = llm_chain.invoke({"question": question,
-                                        "system_message": sys_mess,
-                                        "context": context})
+    if vectdb == '' and num_chunks == 0:
+        sys_mess = "You are a conversational interface towards an automata of the LEGO factory. Please answer the user question at the end."
+        complete_answer = llm_chain.invoke({"question": question,
+                                            "system_message": sys_mess})
+    else:
+        context = retrieve_context(vectdb, question, num_chunks)
+        complete_answer = llm_chain.invoke({"question": question,
+                                            "system_message": sys_mess,
+                                            "context": context})
     if 'meta-llama/Meta-Llama-3' in choice or 'llama3dot1' in choice:
         index = complete_answer.find('<|start_header_id|>assistant<|end_header_id|>')
         prompt = complete_answer[:index + len('<|start_header_id|>assistant<|end_header_id|>')]

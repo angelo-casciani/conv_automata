@@ -1,36 +1,38 @@
 from argparse import ArgumentParser
 from dotenv import load_dotenv
+from torch import cuda
 import warnings
 
-from oracle import AnswerVerificationOracle
+# from oracle import AnswerVerificationOracle
 from pipeline import *
 from utility import *
-from vector_store import *
+# from vector_store import *
 
 
 device = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
 load_dotenv()
 hf_auth = os.getenv('HF_TOKEN')
-url = os.getenv('QDRANT_URL')
+"""url = os.getenv('QDRANT_URL')
 grpc_port = int(os.getenv('QDRANT_GRPC_PORT'))
-collection_name = 'process-rag'
+collection_name = 'process-rag'"""
 SEED = 10
 warnings.filterwarnings('ignore')
 
 
 def parse_arguments():
     parser = ArgumentParser(description="Run LLM Generation.")
-    parser.add_argument('--embed_model_id', type=str, default='sentence-transformers/all-MiniLM-L6-v2',
-                        help='Embedding model identifier')
     parser.add_argument('--llm_id', type=str, default='meta-llama/Llama-2-13b-chat-hf', help='LLM model identifier')
     parser.add_argument('--model_max_length', type=int, help='Maximum input length for the LLM model', default=4096)
+    parser.add_argument('--max_new_tokens', type=int, help='Maximum number of tokens to generate', default=256)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--modality', type=str, default='live')
+    """parser.add_argument('--embed_model_id', type=str, default='sentence-transformers/all-MiniLM-L6-v2',
+                        help='Embedding model identifier')
     parser.add_argument('--num_documents_in_context', type=int, help='Total number of documents in the context',
                         default=10)
     parser.add_argument('--process_models', nargs='+', help='The process model(s) to analyze', default=['food_bpmn'])
-    parser.add_argument('--max_new_tokens', type=int, help='Maximum number of tokens to generate', default=256)
-    parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--rebuild_vectordb', type=str2bool, help='Rebuild the vector index', default=True)
-    parser.add_argument('--modality', type=str, default='evaluation2')
+    """
     args = parser.parse_args()
 
     return args
@@ -39,7 +41,7 @@ def parse_arguments():
 def main():
     args = parse_arguments()
 
-    embed_model_id = args.embed_model_id
+    """embed_model_id = args.embed_model_id
     embed_model = initialize_embedding_model(embed_model_id, device, args.batch_size)
 
     if args.rebuild_vectordb:
@@ -94,13 +96,13 @@ def main():
         filename_bpmn = 'ecommerce.bpmn'
         content = load_process_representation(filename_bpmn)
         semantic_chunks = parse_bpmn_in_chunks(content)
-        qdrant = store_vectorized_semantically_chunked_bpmn(semantic_chunks, filename_bpmn, embed_model, url, grpc_port, collection_name)
+        qdrant = store_vectorized_semantically_chunked_bpmn(semantic_chunks, filename_bpmn, embed_model, url, grpc_port, collection_name)"""
 
     model_id = args.llm_id
     max_new_tokens = args.max_new_tokens
     chain = initialize_chain(model_id, hf_auth, max_new_tokens)
 
-    questions = {}
+    """questions = {}
     if 'evaluation' in args.modality:
         if args.modality == 'evaluation1':
             questions = load_csv_questions('1_questions_answers_not_refined_for_DFG.csv')
@@ -119,8 +121,11 @@ def main():
         oracle = AnswerVerificationOracle()
         evaluate_rag_pipeline(oracle, chain, qdrant, questions, model_id, num_docs)
     else:
-        live_prompting(chain, qdrant, model_id, num_docs)
+        live_prompting(chain, qdrant, model_id, num_docs)"""
 
+    qdrant = ''
+    num_docs = 0
+    live_prompting(chain, qdrant, model_id, num_docs)
 
 if __name__ == "__main__":
     seed_everything(SEED)
