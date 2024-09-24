@@ -21,17 +21,17 @@ warnings.filterwarnings('ignore')
 
 def parse_arguments():
     parser = ArgumentParser(description="Run LLM Generation.")
-    parser.add_argument('--llm_id', type=str, default='meta-llama/Llama-2-13b-chat-hf', help='LLM model identifier')
-    parser.add_argument('--model_max_length', type=int, help='Maximum input length for the LLM model', default=4096)
+    parser.add_argument('--llm_id', type=str, default='meta-llama/Meta-Llama-3.1-8B-Instruct', help='LLM model identifier')
     parser.add_argument('--max_new_tokens', type=int, help='Maximum number of tokens to generate', default=256)
-    parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--modality', type=str, default='live')
     """parser.add_argument('--embed_model_id', type=str, default='sentence-transformers/all-MiniLM-L6-v2',
                         help='Embedding model identifier')
+    parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_documents_in_context', type=int, help='Total number of documents in the context',
                         default=10)
     parser.add_argument('--process_models', nargs='+', help='The process model(s) to analyze', default=['food_bpmn'])
     parser.add_argument('--rebuild_vectordb', type=str2bool, help='Rebuild the vector index', default=True)
+    parser.add_argument('--model_max_length', type=int, help='Maximum input length for the LLM model', default=4096)
     """
     args = parser.parse_args()
 

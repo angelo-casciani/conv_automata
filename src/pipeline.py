@@ -85,17 +85,29 @@ def initialize_pipeline(model_identifier, hf_token, max_new_tokens):
 
 
 def generate_prompt_template(model_id):
+    # template = """<s>[INST]
+    # <<SYS>>
+    # {system_message}
+    # <</SYS>>
+    # <<CONTEXT>>
+    # {context}
+    # <</CONTEXT>>
+    # <<QUESTION>>
+    # {question}
+    # <</QUESTION>>
+    # <<ANSWER>> [/INST]"""
+
     template = """<s>[INST]
-    <<SYS>>
-    {system_message}
-    <</SYS>>
-    <<CONTEXT>>
-    {context}
-    <</CONTEXT>>
-    <<QUESTION>>
-    {question}
-    <</QUESTION>>
-    <<ANSWER>> [/INST]"""
+        <<SYS>>
+        {system_message}
+        <</SYS>>
+        <<CONTEXT>>
+        {context}
+        <</CONTEXT>>
+        <<QUESTION>>
+        {question}
+        <</QUESTION>>
+        <<ANSWER>> [/INST]"""
 
     # template = """{system_message}\n\nContext: {context}\n\nQuestion: {question}\n\nAnswer: """
 
