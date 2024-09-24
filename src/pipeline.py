@@ -99,20 +99,15 @@ def generate_prompt_template(model_id):
 
     # template = """{system_message}\n\nContext: {context}\n\nQuestion: {question}\n\nAnswer: """
 
-    # template_llama3 = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-    # {system_message}<|eot_id|>
-    # <|start_header_id|>user<|end_header_id|>
-    # <|start_context_id|>
-    # {context}
-    # <|end_context_id|>
-    # <|start_question_id|>
-    # {question}
-    # <|end_question_id|><|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
-
-    template_llama3 = """<|begin_of_text|><|start_header_id|>system<|end_header_id|> {system_message}
-    <|eot_id|><|start_header_id|>user<|end_header_id|>
-    Here is the context: \n\n {context} \n\n
-    Here is the question: {question} \n <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+    template_llama3 = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+    {system_message}<|eot_id|>
+    <|start_header_id|>user<|end_header_id|>
+    <|start_context_id|>
+    {context}
+    <|end_context_id|>
+    <|start_question_id|>
+    {question}
+    <|end_question_id|><|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
     if 'meta-llama/Meta-Llama-3' in model_id or 'llama3dot1' in model_id:
         prompt = PromptTemplate.from_template(template_llama3)
