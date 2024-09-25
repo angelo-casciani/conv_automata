@@ -125,6 +125,7 @@ def generate_prompt_template(model_id):
 
     template_llama3 = """<|begin_of_text|><|start_header_id|>system<|end_header_id|> {system_message}
     <|eot_id|><|start_header_id|>user<|end_header_id|>
+    Here is the context: {context}
     Here is the question: {question} \n <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
     if 'meta-llama/Meta-Llama-3' in model_id or 'llama3dot1' in model_id:
@@ -145,19 +146,23 @@ def initialize_chain(model_id, hf_auth, max_new_tokens):
 
 
 def produce_answer(question, llm_chain, vectdb, choice, num_chunks, live=False):
+    factory = WeightedFactory()
     sys_mess = "Use the following pieces of context to answer the question at the end."
     if not live:
         sys_mess = sys_mess + " Answer 'yes' if true or 'no' if false."
         # "If you don't know the answer, just say that you don't know, don't try to make up an answer."
     if vectdb == '' and num_chunks == 0:
         sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
-        Map the user question to one of the allowed task and add it with the event sequence to a JSON object.
+        Generate from the user question a JSON object containing one of the allowed task and the event sequence.
         Use the information in the context to generate this JSON object.
-        Example:
-        User question: Carry out a failure analysis to check if the sequence _load_1, _process_1, _fail_1 
+        If the user question does not match any of the allowed tasks or lacks the event sequence kindly refuse to answer.
+        Examples:
+        1. User question: Carry out a failure analysis to check if the sequence _load_1, _process_1, _fail_1 
         leads to a failure.
-        JSON to generate: {"task": "failure_mode_analysis", "events_sequence": ["s11", "s12", "s14"]}"""
-        factory = FactoryAutomata()
+        LLM Answer: {"task": "failure_mode_analysis", "events_sequence": ["s11", "s12", "s14"]}
+        2. User question: what is the next event possible after executing  _load_1, _process_1? 
+        leads to a failure.
+        LLM Answer: {"task": "event_prediction", "events_sequence": ["s11", "s12"]}"""
         context = f'The allowed tasks are: failure_mode_analysis, event_prediction, process_cost, verification.\n\nThe labels for the events are: {factory.get_event_symbols()}'
         complete_answer = llm_chain.invoke({"question": question,
                                             "context": context,
@@ -179,11 +184,13 @@ def produce_answer(question, llm_chain, vectdb, choice, num_chunks, live=False):
         index = complete_answer.find('[/INST]')
         prompt = complete_answer[:index + len('[/INST]')]
         answer = complete_answer[index + len('[/INST]'):]
-    
+
+    print(complete_answer)
     results = interface.interface_with_llm(answer)
     sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
-    Report the results given bu the factory automata provided in the context to the user."""
-    context = results
+    Report the results given by the factory automata provided in the context to the user."""
+    context = f'The labels for the events are: {factory.get_event_symbols()}\n'
+    context += f'Results from the automaton: {results}'
     complete_answer = llm_chain.invoke({"question": question,
                                         "context": context,
                                         "system_message": sys_mess})
