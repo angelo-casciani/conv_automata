@@ -1,5 +1,6 @@
 import random
 
+
 class FactoryAutomata:
     def __init__(self):
         self.state = '_init_'
@@ -57,37 +58,62 @@ class FactoryAutomata:
         self.failure_states = ['_fail_1', '_fail_5']
         self.path = []
 
+
+    def get_state(self):
+        return self.state
+
+
+    def get_transitions(self):
+        return self.transitions
+
+
+    def get_event_symbols(self):
+        return self.event_symbols
+
+
+    def get_failure_states(self):
+        return self.failure_states
+
+
+    def get_path(self):
+        return self.path
+
+
     def trigger(self, event):
         self.path.append(event)
         if event in self.transitions[self.state]:
             self.state = self.transitions[self.state][event]
             event_label = self.event_symbols[event]
             if event_label in self.failure_states:
-                print(f"Failure encountered at state {self.state}, Path: {self.path}")
+                return f"Failure encountered at state {self.state}, Path: {self.path}"
             else:
-                print(f"Transitioned to {self.state}")
+                return f"Transitioned to {self.state}"
         else:
-            print(f"Invalid event {event} for state {self.state}")
+            return f"Invalid event {event} for state {self.state}"
+
 
     def predict_next_event(self):
         possible_events = list(self.transitions[self.state].keys())
         predicted_event = random.choice(possible_events)
-        print(f"Predicted next event: {predicted_event}")
-        return predicted_event
+        return f"Predicted next event: {predicted_event}"
+
 
     def verify_process_completion(self):
         if self.state == 'q_12':
-            print("Process completed successfully!")
+            return "Process completed successfully in q_12!"
         else:
-            print("Process did not complete as expected!")
+            return "Process did not complete as expected!"
+
 
 class WeightedFactory(FactoryAutomata):
     def __init__(self):
         super().__init__()
-        self.cost = 0  # Accumulate cost of transitions
+        self.cost = 0
+
 
     def get_cost(self):
         return self.cost
+
 
     def trigger(self, event):
         self.path.append(event)
@@ -95,6 +121,7 @@ class WeightedFactory(FactoryAutomata):
         self.cost += transition_cost
         print(f"Cost after event {event}: {self.cost}")
         super().trigger(event)
+
 
     def get_transition_cost(self, event):
         cost_mapping = {'s11': 3,
@@ -123,18 +150,18 @@ class WeightedFactory(FactoryAutomata):
         return cost_mapping.get(event, cost_mapping[event])
 
 
-def main():
+"""def main():
     print('Simulate factory and trigger a failure.')
     factory = FactoryAutomata()
-    factory.trigger('s11')
-    factory.trigger('s12')
-    factory.trigger('s14')
+    print(factory.trigger('s11'))
+    print(factory.trigger('s12'))
+    print(factory.trigger('s14'))
     print('\n')
 
     print('Next event prediction')
     factory = FactoryAutomata()
-    factory.trigger('s11')
-    factory.predict_next_event()
+    print(factory.trigger('s11'))
+    print(factory.predict_next_event())
     print('\n')
 
     print('Simulate factory execution with costs.')
@@ -156,8 +183,8 @@ def main():
     factory.trigger('s51')
     factory.trigger('s52')
     factory.trigger('s53')
-    factory.verify_process_completion()
+    print(factory.verify_process_completion())
 
 
 if __name__ == "__main__":
-    main()
+    main()"""

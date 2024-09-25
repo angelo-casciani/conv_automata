@@ -39,6 +39,12 @@ def parse_arguments():
 
 
 def main():
+    print("""Welcome! The tasks that are possible at the moment on the LEGO Factory automata are:
+          1. Failure Mode Analysis
+          2. Event Prediction
+          3. Process Cost Computation
+          4. Verification\n""")
+
     args = parse_arguments()
 
     """embed_model_id = args.embed_model_id
