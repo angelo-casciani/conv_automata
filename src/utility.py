@@ -1,9 +1,13 @@
 import csv
+import json
 import os
+import re
+
 import torch
 import random
 import argparse
 import numpy as np
+
 
 def seed_everything(seed=10):
     random.seed(seed)
@@ -50,3 +54,15 @@ def log_to_file(message, curr_datetime):
     filepath = os.path.join("..", "tests", "outputs", f"output_{curr_datetime}.txt")
     with open(filepath, 'a') as file:
         file.write(message)
+
+
+def extract_json(llm_answer):
+    json_match = re.search(r'\{.*\}', llm_answer, re.DOTALL)
+    json_str = ''
+    if json_match:
+        json_str = json_match.group(0)
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            pass
+    return json_str

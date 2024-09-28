@@ -1,6 +1,5 @@
 from lego_factory import FactoryAutomata, WeightedFactory
-import json
-import re
+from utility import extract_json
 
 
 def trigger_failure_mode_analysis(events_sequence):
@@ -40,17 +39,6 @@ def compute_process_cost(events_sequence):
         results += f"{res}\n"
     results += f'Total execution cost: {weighted_factory.get_cost()}'
     return results
-
-
-def extract_json(llm_answer):
-    json_match = re.search(r'\{.*\}', llm_answer, re.DOTALL)
-    if json_match:
-        json_str = json_match.group(0)
-        try:
-            return json.loads(json_str)
-        except json.JSONDecodeError:
-            pass
-    return json_str
 
 
 def interface_with_llm(llm_answer):

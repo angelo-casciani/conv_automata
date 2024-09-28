@@ -58,26 +58,20 @@ class FactoryAutomata:
         self.failure_states = ['_fail_1', '_fail_5']
         self.path = []
 
-
     def get_state(self):
         return self.state
-
 
     def get_transitions(self):
         return self.transitions
 
-
     def get_event_symbols(self):
         return self.event_symbols
-
 
     def get_failure_states(self):
         return self.failure_states
 
-
     def get_path(self):
         return self.path
-
 
     def trigger(self, event):
         self.path.append(event)
@@ -91,12 +85,10 @@ class FactoryAutomata:
         else:
             return f"Invalid event {event} for state {self.state}"
 
-
     def predict_next_event(self):
         possible_events = list(self.transitions[self.state].keys())
         predicted_event = random.choice(possible_events)
         return f"Predicted next event: {predicted_event}"
-
 
     def verify_process_completion(self):
         if self.state == 'q_12':
@@ -110,17 +102,15 @@ class WeightedFactory(FactoryAutomata):
         super().__init__()
         self.cost = 0
 
-
     def get_cost(self):
         return self.cost
-
 
     def trigger(self, event):
         self.path.append(event)
         transition_cost = self.get_transition_cost(event)
         self.cost += transition_cost
-        print(f"Cost after event {event}: {self.cost}")
-        super().trigger(event)
+        return f"Cost after event {event}: {self.cost}"
+        # super().trigger(event)
 
 
     def get_transition_cost(self, event):
@@ -146,7 +136,7 @@ class WeightedFactory(FactoryAutomata):
                         's53': 3,
                         's54': 10,
                         's55': 8
-        }
+                        }
         return cost_mapping.get(event, cost_mapping[event])
 
 

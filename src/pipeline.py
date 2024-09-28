@@ -5,10 +5,11 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, BitsAndB
 from torch import bfloat16
 
 import datetime
-from lego_factory import FactoryAutomata, WeightedFactory
+from lego_factory import WeightedFactory
 import llm_factory_interface as interface
-from utility import log_to_file
+from utility import log_to_file, extract_json
 from vector_store import retrieve_context
+
 
 def initialize_embedding_model(embedding_model_id, dev, batch_size):
     embedding_model = HuggingFaceEmbeddings(
@@ -132,7 +133,7 @@ def generate_prompt_template(model_id):
         prompt = PromptTemplate.from_template(template_llama3)
     else:
         prompt = PromptTemplate.from_template(template)
-    
+
     return prompt
 
 
@@ -198,11 +199,11 @@ def produce_answer(question, llm_chain, vectdb, choice, num_chunks, live=False):
         index = complete_answer.find('<|start_header_id|>assistant<|end_header_id|>')
         prompt = complete_answer[:index + len('<|start_header_id|>assistant<|end_header_id|>')]
         answer = complete_answer[index + len('<|start_header_id|>assistant<|end_header_id|>'):]
-    
+
     return prompt, answer
 
 
-def produce_answer_double_llm(question, llm_chain, vectdb, choice, num_chunks, live=False, chain2):
+def produce_answer_double_llm(question, llm_chain, vectdb, choice, num_chunks, live=False, chain2=None):
     factory = WeightedFactory()
     sys_mess = "Use the following pieces of context to answer the question at the end."
     if not live:
@@ -249,19 +250,20 @@ def produce_answer_double_llm(question, llm_chain, vectdb, choice, num_chunks, l
     context = f'The labels for the events are: {factory.get_event_symbols()}\n'
     context += f'Results from the automaton: {results}'
     complete_answer = chain2.invoke({"question": question,
-                                        "context": context,
-                                        "system_message": sys_mess})
+                                    "context": context,
+                                    "system_message": sys_mess})
     if 'meta-llama/Meta-Llama-3' in choice or 'llama3dot1' in choice:
         index = complete_answer.find('<|start_header_id|>assistant<|end_header_id|>')
         prompt = complete_answer[:index + len('<|start_header_id|>assistant<|end_header_id|>')]
         answer = complete_answer[index + len('<|start_header_id|>assistant<|end_header_id|>'):]
-    
+
     return prompt, answer
 
 
-def produce_answer_live(question, curr_datetime, model_chain, vectordb, choice, num_chunks, chain2 = None):
+def produce_answer_live(question, curr_datetime, model_chain, vectordb, choice, num_chunks, chain2=None):
     if chain2 is not None:
-        complete_prompt, answer = produce_answer_double_llm(question, model_chain, vectordb, choice, num_chunks, True, chain2)
+        complete_prompt, answer = produce_answer_double_llm(question, model_chain, vectordb, choice, num_chunks, True,
+                                                            chain2)
     else:
         complete_prompt, answer = produce_answer(question, model_chain, vectordb, choice, num_chunks, True)
     print(f'Prompt: {complete_prompt}\n')
@@ -272,7 +274,7 @@ def produce_answer_live(question, curr_datetime, model_chain, vectordb, choice, 
                 curr_datetime)
 
 
-def live_prompting(model1, vect_db, choice, num_chunks, chain2 = None):
+def live_prompting(model1, vect_db, choice, num_chunks, chain2=None):
     current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     while True:
         query = input('Insert the query you want to ask (type "quit" to exit): ')
@@ -280,7 +282,7 @@ def live_prompting(model1, vect_db, choice, num_chunks, chain2 = None):
         if query.lower() == 'quit':
             print("Exiting the chat.")
             break
-        
+
         if chain2 is not None:
             produce_answer_live(query, current_datetime, model1, vect_db, choice, num_chunks, chain2)
         else:
