@@ -202,8 +202,68 @@ def produce_answer(question, llm_chain, vectdb, choice, num_chunks, live=False):
     return prompt, answer
 
 
-def produce_answer_live(question, curr_datetime, model_chain, vectordb, choice, num_chunks):
-    complete_prompt, answer = produce_answer(question, model_chain, vectordb, choice, num_chunks, True)
+def produce_answer_double_llm(question, llm_chain, vectdb, choice, num_chunks, live=False, chain2):
+    factory = WeightedFactory()
+    sys_mess = "Use the following pieces of context to answer the question at the end."
+    if not live:
+        sys_mess = sys_mess + " Answer 'yes' if true or 'no' if false."
+        # "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+    if vectdb == '' and num_chunks == 0:
+        sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
+        Generate from the user question a JSON object containing one of the allowed task and the event sequence.
+        Use the information in the context to generate this JSON object.
+        If the user question does not match any of the allowed tasks or lacks the event sequence kindly refuse to answer.
+        Examples:
+        1. User question: Carry out a failure analysis to check if the sequence _load_1, _process_1, _fail_1 
+        leads to a failure.
+        LLM Answer: {"task": "failure_mode_analysis", "events_sequence": ["s11", "s12", "s14"]}
+        2. User question: what is the next event possible after executing  _load_1, _process_1? 
+        leads to a failure.
+        LLM Answer: {"task": "event_prediction", "events_sequence": ["s11", "s12"]}"""
+        context = f'The allowed tasks are: failure_mode_analysis, event_prediction, process_cost, verification.\n\nThe labels for the events are: {factory.get_event_symbols()}'
+        complete_answer = llm_chain.invoke({"question": question,
+                                            "context": context,
+                                            "system_message": sys_mess})
+    else:
+        context = retrieve_context(vectdb, question, num_chunks)
+        complete_answer = llm_chain.invoke({"question": question,
+                                            "system_message": sys_mess,
+                                            "context": context})
+    if 'meta-llama/Meta-Llama-3' in choice or 'llama3dot1' in choice:
+        index = complete_answer.find('<|start_header_id|>assistant<|end_header_id|>')
+        prompt = complete_answer[:index + len('<|start_header_id|>assistant<|end_header_id|>')]
+        answer = complete_answer[index + len('<|start_header_id|>assistant<|end_header_id|>'):]
+    elif 'Question:' in complete_answer:
+        index = complete_answer.find('Answer: ')
+        prompt = complete_answer[:index]
+        answer = complete_answer[index + len('Answer: '):]
+    else:
+        index = complete_answer.find('[/INST]')
+        prompt = complete_answer[:index + len('[/INST]')]
+        answer = complete_answer[index + len('[/INST]'):]
+
+    print(complete_answer)
+    results = interface.interface_with_llm(answer)
+    sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
+    Report the results given by the factory automata provided in the context to the user."""
+    context = f'The labels for the events are: {factory.get_event_symbols()}\n'
+    context += f'Results from the automaton: {results}'
+    complete_answer = chain2.invoke({"question": question,
+                                        "context": context,
+                                        "system_message": sys_mess})
+    if 'meta-llama/Meta-Llama-3' in choice or 'llama3dot1' in choice:
+        index = complete_answer.find('<|start_header_id|>assistant<|end_header_id|>')
+        prompt = complete_answer[:index + len('<|start_header_id|>assistant<|end_header_id|>')]
+        answer = complete_answer[index + len('<|start_header_id|>assistant<|end_header_id|>'):]
+    
+    return prompt, answer
+
+
+def produce_answer_live(question, curr_datetime, model_chain, vectordb, choice, num_chunks, chain2 = None):
+    if chain2 is not None:
+        complete_prompt, answer = produce_answer_double_llm(question, model_chain, vectordb, choice, num_chunks, True, chain2)
+    else:
+        complete_prompt, answer = produce_answer(question, model_chain, vectordb, choice, num_chunks, True)
     print(f'Prompt: {complete_prompt}\n')
     print(f'Answer: {answer}\n')
     print('--------------------------------------------------')
@@ -212,7 +272,7 @@ def produce_answer_live(question, curr_datetime, model_chain, vectordb, choice, 
                 curr_datetime)
 
 
-def live_prompting(model1, vect_db, choice, num_chunks):
+def live_prompting(model1, vect_db, choice, num_chunks, chain2 = None):
     current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     while True:
         query = input('Insert the query you want to ask (type "quit" to exit): ')
@@ -220,8 +280,11 @@ def live_prompting(model1, vect_db, choice, num_chunks):
         if query.lower() == 'quit':
             print("Exiting the chat.")
             break
-
-        produce_answer_live(query, current_datetime, model1, vect_db, choice, num_chunks)
+        
+        if chain2 is not None:
+            produce_answer_live(query, current_datetime, model1, vect_db, choice, num_chunks, chain2)
+        else:
+            produce_answer_live(query, current_datetime, model1, vect_db, choice, num_chunks)
         print()
 
 
