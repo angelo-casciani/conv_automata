@@ -220,7 +220,9 @@ def produce_answer_double_llm(question, llm_chain, vectdb, choice, num_chunks, l
         LLM Answer: {"task": "failure_mode_analysis", "events_sequence": ["s11", "s12", "s14"]}
         2. User question: what is the next event possible after executing  _load_1, _process_1? 
         leads to a failure.
-        LLM Answer: {"task": "event_prediction", "events_sequence": ["s11", "s12"]}"""
+        LLM Answer: {"task": "event_prediction", "events_sequence": ["s11", "s12"]}
+        3. User question: Does the sequence of events load_1, process_1, unload_1, load_2 leads to the successful completion of the process??
+        LLM Answer: {"task": "verification", "events_sequence": ["s11", "s12", "s13", "s21"]}"""
         context = f'The allowed tasks are: failure_mode_analysis, event_prediction, process_cost, verification.\n\nThe labels for the events are: {factory.get_event_symbols()}'
         complete_answer = llm_chain.invoke({"question": question,
                                             "context": context,
