@@ -8,7 +8,6 @@ import datetime
 from lego_factory import WeightedFactory
 import llm_factory_interface as interface
 from utility import log_to_file, extract_json
-from vector_store import retrieve_context
 
 
 def initialize_embedding_model(embedding_model_id, dev, batch_size):
@@ -168,11 +167,6 @@ def produce_answer(question, llm_chain, vectdb, choice, num_chunks, live=False):
         complete_answer = llm_chain.invoke({"question": question,
                                             "context": context,
                                             "system_message": sys_mess})
-    else:
-        context = retrieve_context(vectdb, question, num_chunks)
-        complete_answer = llm_chain.invoke({"question": question,
-                                            "system_message": sys_mess,
-                                            "context": context})
     if 'meta-llama/Meta-Llama-3' in choice or 'llama3dot1' in choice:
         index = complete_answer.find('<|start_header_id|>assistant<|end_header_id|>')
         prompt = complete_answer[:index + len('<|start_header_id|>assistant<|end_header_id|>')]
@@ -227,11 +221,6 @@ def produce_answer_double_llm(question, llm_chain, vectdb, choice, num_chunks, l
         complete_answer = llm_chain.invoke({"question": question,
                                             "context": context,
                                             "system_message": sys_mess})
-    else:
-        context = retrieve_context(vectdb, question, num_chunks)
-        complete_answer = llm_chain.invoke({"question": question,
-                                            "system_message": sys_mess,
-                                            "context": context})
     if 'meta-llama/Meta-Llama-3' in choice or 'llama3dot1' in choice:
         index = complete_answer.find('<|start_header_id|>assistant<|end_header_id|>')
         prompt = complete_answer[:index + len('<|start_header_id|>assistant<|end_header_id|>')]
