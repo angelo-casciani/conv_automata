@@ -84,15 +84,15 @@ def interface_with_llm(llm_answer):
     return json_request
 
 
-def main():
-    """simulation_output = trigger_simulation(['s11', 's12', 's13', 's21', 's22', 's23'])
+    """def main():
+    simulation_output = trigger_simulation(['s11', 's12', 's13', 's21', 's22', 's23'])
     print(simulation_output)
     predicted_event = trigger_event_prediction(['s11', 's12', 's13', 's21', 's22', 's23'])
     print(predicted_event)
     simulation_output = trigger_simulation_with_cost()
-    print(simulation_output)"""
-
-    """llm_input = 'Given the user request, this is the JSON to invoke the factory: {"task": "simulation", "events_sequence": ["s11", "s12", "s14"]}'
+    print(simulation_output)
+    
+    llm_input = 'Given the user request, this is the JSON to invoke the factory: {"task": "simulation", "events_sequence": ["s11", "s12", "s14"]}'
     llm_input = 'Given the user request, this is the JSON to invoke the factory: {"task": "simulation", "events_sequence": []}'
     factory_output = interface_with_llm(llm_input)
     print(factory_output)
@@ -110,7 +110,7 @@ def main():
     llm_input = 'Given the user request, this is the JSON to invoke the factory: {"task": "verification", "events_sequence": ["s11", "s12", "s13", "s21", "s22", "s23", "s41", "s42", "s43", "s51", "s52", "s53"]}'
     factory_output = interface_with_llm(llm_input)
     print(factory_output)
-    """
+    
 
 if __name__ == "__main__":
-    main()
+    main()"""

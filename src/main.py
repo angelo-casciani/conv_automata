@@ -11,9 +11,6 @@ from utility import *
 device = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
 load_dotenv()
 hf_auth = os.getenv('HF_TOKEN')
-"""url = os.getenv('QDRANT_URL')
-grpc_port = int(os.getenv('QDRANT_GRPC_PORT'))
-collection_name = 'process-rag'"""
 SEED = 10
 warnings.filterwarnings('ignore')
 
@@ -30,10 +27,10 @@ def parse_arguments():
 
 def main():
     print("""Welcome! The tasks that are possible at the moment on the LEGO Factory automata are:
-          1. Failure Mode Analysis
-          2. Event Prediction
-          3. Process Cost Computation
-          4. Verification\n""")
+          1. Simulation
+          2. Simulation with specified sequence of events
+          3. Event Prediction
+          4. Simulation with cost analysis\n""")
 
     args = parse_arguments()
 
@@ -44,7 +41,7 @@ def main():
 
     qdrant = ''
     num_docs = 0
-    # live_prompting(chain, qdrant, model_id, num_docs)
+
     live_prompting(chain, qdrant, model_id, num_docs, chain2)
 
 if __name__ == "__main__":

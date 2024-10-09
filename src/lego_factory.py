@@ -1,4 +1,5 @@
 import random
+import simpy
 
 class FactoryAutomata:
     def __init__(self, env):

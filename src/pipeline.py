@@ -1,4 +1,3 @@
-from langchain_community.embeddings.huggingface import HuggingFaceEmbeddings
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain_core.prompts import PromptTemplate
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, BitsAndBytesConfig, AutoConfig
@@ -8,17 +7,6 @@ import datetime
 from lego_factory import WeightedFactory
 import llm_factory_interface as interface
 from utility import log_to_file, extract_json
-
-
-def initialize_embedding_model(embedding_model_id, dev, batch_size):
-    embedding_model = HuggingFaceEmbeddings(
-        model_name=embedding_model_id,
-        model_kwargs={'device': dev},
-        encode_kwargs={'device': dev, 'batch_size': batch_size}
-        # multi_process=True
-    )
-
-    return embedding_model
 
 
 def initialize_pipeline(model_identifier, hf_token, max_new_tokens):
@@ -145,113 +133,92 @@ def initialize_chain(model_id, hf_auth, max_new_tokens):
     return chain
 
 
-def produce_answer(question, llm_chain, vectdb, choice, num_chunks, live=False):
+def produce_answer(question, llm_chain, choice, live=False):
     factory = WeightedFactory()
-    sys_mess = "Use the following pieces of context to answer the question at the end."
-    if not live:
-        sys_mess = sys_mess + " Answer 'yes' if true or 'no' if false."
-        # "If you don't know the answer, just say that you don't know, don't try to make up an answer."
-    if vectdb == '' and num_chunks == 0:
-        sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
-        Generate from the user question a JSON object containing one of the allowed task and the event sequence.
-        Use the information in the context to generate this JSON object.
-        If the user question does not match any of the allowed tasks or lacks the event sequence kindly refuse to answer.
-        Examples:
-        1. User question: Carry out a failure analysis to check if the sequence _load_1, _process_1, _fail_1 
-        leads to a failure.
-        LLM Answer: {"task": "failure_mode_analysis", "events_sequence": ["s11", "s12", "s14"]}
-        2. User question: what is the next event possible after executing  _load_1, _process_1? 
-        leads to a failure.
-        LLM Answer: {"task": "event_prediction", "events_sequence": ["s11", "s12"]}"""
-        context = f'The allowed tasks are: failure_mode_analysis, event_prediction, process_cost, verification.\n\nThe labels for the events are: {factory.get_event_symbols()}'
-        complete_answer = llm_chain.invoke({"question": question,
+    sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
+    Use the following pieces of context to generate from the user question a JSON object containing one of the allowed task and the provided event sequence (if any).
+    If the user question does not match an allowed tasks kindly refuse to answer.
+    Examples:
+    1. User question: Carry out a simulation to check if the sequence _load_1, _process_1, _fail_1 leads to a failure.
+    LLM Answer: {"task": "simulation", "events_sequence": ["s11", "s12", "s14"]}
+    2. User question: Simulate the execution of the production process.
+    LLM Answer: {"task": "simulation", "events_sequence": []}
+    3. User question: what is the next event possible after executing  _load_1, _process_1? 
+    LLM Answer: {"task": "event_prediction", "events_sequence": ["s11", "s12"]}
+    4. User question: What is the cost of executing load_1, process_1, unload_1, load_2?
+    LLM Answer: {"task": "simulation_cost", "events_sequence": ["s11", "s12", "s13", "s21"]}"""
+    context = f'The allowed tasks are: failure_mode_analysis, event_prediction, process_cost, verification.\n\nThe labels for the events are: {factory.get_event_symbols()}'
+    complete_answer = llm_chain.invoke({"question": question,
                                             "context": context,
                                             "system_message": sys_mess})
-    if 'meta-llama/Meta-Llama-3' in choice or 'llama3dot1' in choice:
-        index = complete_answer.find('<|start_header_id|>assistant<|end_header_id|>')
-        prompt = complete_answer[:index + len('<|start_header_id|>assistant<|end_header_id|>')]
-        answer = complete_answer[index + len('<|start_header_id|>assistant<|end_header_id|>'):]
-    elif 'Question:' in complete_answer:
-        index = complete_answer.find('Answer: ')
-        prompt = complete_answer[:index]
-        answer = complete_answer[index + len('Answer: '):]
-    else:
-        index = complete_answer.find('[/INST]')
-        prompt = complete_answer[:index + len('[/INST]')]
-        answer = complete_answer[index + len('[/INST]'):]
+    prompt, answer = parse_llm_answer(complete_answer, choice)
 
     print(complete_answer)
     results = interface.interface_with_llm(answer)
     sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
-    Report the results given by the factory automata provided in the context to the user."""
+    Report the results given by the factory automata provided in the context to the user.
+    If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
     context = f'The labels for the events are: {factory.get_event_symbols()}\n'
     context += f'Results from the automaton: {results}'
     complete_answer = llm_chain.invoke({"question": question,
                                         "context": context,
                                         "system_message": sys_mess})
-    if 'meta-llama/Meta-Llama-3' in choice or 'llama3dot1' in choice:
-        index = complete_answer.find('<|start_header_id|>assistant<|end_header_id|>')
-        prompt = complete_answer[:index + len('<|start_header_id|>assistant<|end_header_id|>')]
-        answer = complete_answer[index + len('<|start_header_id|>assistant<|end_header_id|>'):]
+    prompt, answer = parse_llm_answer(complete_answer, choice)
 
     return prompt, answer
 
 
-def produce_answer_double_llm(question, llm_chain, vectdb, choice, num_chunks, live=False, chain2=None):
+def produce_answer_double_llm(question, llm_chain, choice, live=False, chain2=None):
     factory = WeightedFactory()
-    sys_mess = "Use the following pieces of context to answer the question at the end."
-    if not live:
-        sys_mess = sys_mess + " Answer 'yes' if true or 'no' if false."
-        # "If you don't know the answer, just say that you don't know, don't try to make up an answer."
-    if vectdb == '' and num_chunks == 0:
-        sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
-        Generate from the user question a JSON object containing one of the allowed task and the event sequence.
-        Use the information in the context to generate this JSON object.
-        If the user question does not match any of the allowed tasks or lacks the event sequence kindly refuse to answer.
-        Examples:
-        1. User question: Carry out a failure analysis to check if the sequence _load_1, _process_1, _fail_1 
-        leads to a failure.
-        LLM Answer: {"task": "failure_mode_analysis", "events_sequence": ["s11", "s12", "s14"]}
-        2. User question: what is the next event possible after executing  _load_1, _process_1? 
-        leads to a failure.
-        LLM Answer: {"task": "event_prediction", "events_sequence": ["s11", "s12"]}
-        3. User question: Does the sequence of events load_1, process_1, unload_1, load_2 leads to the successful completion of the process??
-        LLM Answer: {"task": "verification", "events_sequence": ["s11", "s12", "s13", "s21"]}"""
-        context = f'The allowed tasks are: failure_mode_analysis, event_prediction, process_cost, verification.\n\nThe labels for the events are: {factory.get_event_symbols()}'
-        complete_answer = llm_chain.invoke({"question": question,
-                                            "context": context,
-                                            "system_message": sys_mess})
-    if 'meta-llama/Meta-Llama-3' in choice or 'llama3dot1' in choice:
-        index = complete_answer.find('<|start_header_id|>assistant<|end_header_id|>')
-        prompt = complete_answer[:index + len('<|start_header_id|>assistant<|end_header_id|>')]
-        answer = complete_answer[index + len('<|start_header_id|>assistant<|end_header_id|>'):]
-    elif 'Question:' in complete_answer:
-        index = complete_answer.find('Answer: ')
-        prompt = complete_answer[:index]
-        answer = complete_answer[index + len('Answer: '):]
-    else:
-        index = complete_answer.find('[/INST]')
-        prompt = complete_answer[:index + len('[/INST]')]
-        answer = complete_answer[index + len('[/INST]'):]
+    sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
+    Use the following pieces of context to generate from the user question a JSON object containing one of the allowed task and the provided event sequence (if any).
+    If the user question does not match an allowed tasks kindly refuse to answer.
+    Examples:
+    1. User question: Carry out a simulation to check if the sequence _load_1, _process_1, _fail_1 leads to a failure.
+    LLM Answer: {"task": "simulation", "events_sequence": ["s11", "s12", "s14"]}
+    2. User question: Simulate the execution of the production process.
+    LLM Answer: {"task": "simulation", "events_sequence": []}
+    3. User question: what is the next event possible after executing  _load_1, _process_1? 
+    LLM Answer: {"task": "event_prediction", "events_sequence": ["s11", "s12"]}
+    4. User question: What is the cost of executing load_1, process_1, unload_1, load_2?
+    LLM Answer: {"task": "simulation_cost", "events_sequence": ["s11", "s12", "s13", "s21"]}"""
+    context = f'The allowed tasks are: simulation, event_prediction, simulation_with_cost.\n\nThe labels for the events are: {factory.get_event_symbols()}'
+    complete_answer = llm_chain.invoke({"question": question,
+                                        "context": context,
+                                        "system_message": sys_mess})
+    prompt, answer = parse_llm_answer(complete_answer, choice)
 
     print(complete_answer)
     results = interface.interface_with_llm(answer)
     sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
-    Report the results given by the factory automata provided in the context to the user."""
+    Report the results given by the factory automata provided in the context to the user.
+    If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
     context = f'The labels for the events are: {factory.get_event_symbols()}\n'
     context += f'Results from the automaton: {results}'
     complete_answer = chain2.invoke({"question": question,
                                     "context": context,
                                     "system_message": sys_mess})
-    if 'meta-llama/Meta-Llama-3' in choice or 'llama3dot1' in choice:
-        index = complete_answer.find('<|start_header_id|>assistant<|end_header_id|>')
-        prompt = complete_answer[:index + len('<|start_header_id|>assistant<|end_header_id|>')]
-        answer = complete_answer[index + len('<|start_header_id|>assistant<|end_header_id|>'):]
+    prompt, answer = parse_llm_answer(complete_answer, choice)
 
     return prompt, answer
 
 
-def produce_answer_live(question, curr_datetime, model_chain, vectordb, choice, num_chunks, chain2=None):
+def parse_llm_answer(compl_answer, llm_choice):
+    if 'meta-llama/Meta-Llama-3' in llm_choice or 'llama3dot1' in llm_choice:
+        delimiter = '<|start_header_id|>assistant<|end_header_id|>'
+    elif 'Question:' in compl_answer:
+        delimiter = 'Answer: '
+    else:
+        delimiter = '[/INST]'
+
+    index = compl_answer.find(delimiter)
+    prompt = compl_answer[:index + len(delimiter)]
+    answer = compl_answer[index + len(delimiter):]  
+    
+    return prompt, answer
+
+
+def produce_answer_live(question, curr_datetime, model_chain, choice, chain2=None):
     if chain2 is not None:
         complete_prompt, answer = produce_answer_double_llm(question, model_chain, vectordb, choice, num_chunks, True,
                                                             chain2)
@@ -265,7 +232,7 @@ def produce_answer_live(question, curr_datetime, model_chain, vectordb, choice, 
                 curr_datetime)
 
 
-def live_prompting(model1, vect_db, choice, num_chunks, chain2=None):
+def live_prompting(model1, choice, chain2=None):
     current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     while True:
         query = input('Insert the query you want to ask (type "quit" to exit): ')
@@ -275,13 +242,13 @@ def live_prompting(model1, vect_db, choice, num_chunks, chain2=None):
             break
 
         if chain2 is not None:
-            produce_answer_live(query, current_datetime, model1, vect_db, choice, num_chunks, chain2)
+            produce_answer_live(query, current_datetime, model1, choice, chain2)
         else:
-            produce_answer_live(query, current_datetime, model1, vect_db, choice, num_chunks)
+            produce_answer_live(query, current_datetime, model1, choice)
         print()
 
 
-def evaluate_rag_pipeline(eval_oracle, lang_chain, vect_db, dict_questions, choice, num_chunks):
+"""def evaluate_rag_pipeline(eval_oracle, lang_chain, vect_db, dict_questions, choice, num_chunks):
     count = 0
     for question, answer in dict_questions.items():
         eval_oracle.add_prompt_expected_answer_pair(question, answer)
@@ -294,4 +261,4 @@ def evaluate_rag_pipeline(eval_oracle, lang_chain, vect_db, dict_questions, choi
         print(f'Processing answer for activity {count} of {len(dict_questions)}...')
 
     print('Validation process completed. Check the output file.')
-    eval_oracle.write_results_to_file()
+    eval_oracle.write_results_to_file()"""
