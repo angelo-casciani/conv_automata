@@ -26,7 +26,7 @@ def parse_arguments():
 
 
 def main():
-    print("""Welcome! The tasks that are possible at the moment on the LEGO Factory automata are:
+    print("""Welcome! The tasks that are possible on the LEGO Factory automata are:
           1. Simulation
           2. Simulation with specified sequence of events
           3. Event Prediction
