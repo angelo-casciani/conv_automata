@@ -6,7 +6,7 @@ from torch import bfloat16
 import datetime
 from lego_factory import WeightedFactory
 import llm_factory_interface as interface
-from utility import log_to_file, extract_json
+from utility import log_to_file
 
 
 def initialize_pipeline(model_identifier, hf_token, max_new_tokens):
@@ -220,10 +220,10 @@ def parse_llm_answer(compl_answer, llm_choice):
 
 def produce_answer_live(question, curr_datetime, model_chain, choice, chain2=None):
     if chain2 is not None:
-        complete_prompt, answer = produce_answer_double_llm(question, model_chain, vectordb, choice, num_chunks, True,
+        complete_prompt, answer = produce_answer_double_llm(question, model_chain, choice, True,
                                                             chain2)
     else:
-        complete_prompt, answer = produce_answer(question, model_chain, vectordb, choice, num_chunks, True)
+        complete_prompt, answer = produce_answer(question, model_chain, choice, True)
     print(f'Prompt: {complete_prompt}\n')
     print(f'Answer: {answer}\n')
     print('--------------------------------------------------')

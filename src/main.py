@@ -39,10 +39,8 @@ def main():
     chain = initialize_chain(model_id, hf_auth, max_new_tokens)
     chain2 = initialize_chain(model_id, hf_auth, max_new_tokens)
 
-    qdrant = ''
-    num_docs = 0
+    live_prompting(chain, model_id, chain2)
 
-    live_prompting(chain, qdrant, model_id, num_docs, chain2)
 
 if __name__ == "__main__":
     seed_everything(SEED)
