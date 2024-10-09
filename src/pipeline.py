@@ -6,7 +6,7 @@ from torch import bfloat16
 import datetime
 from lego_factory import WeightedFactory
 import llm_factory_interface as interface
-from utility import log_to_file
+from utility import log_to_file, retrieve_automata
 
 
 def initialize_pipeline(model_identifier, hf_token, max_new_tokens):
@@ -134,7 +134,7 @@ def initialize_chain(model_id, hf_auth, max_new_tokens):
 
 
 def produce_answer(question, llm_chain, choice, live=False):
-    factory = WeightedFactory()
+    automata_data = retrieve_automata()
     sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
     Use the following pieces of context to generate from the user question a JSON object containing one of the allowed task and the provided event sequence (if any).
     If the user question does not match an allowed tasks kindly refuse to answer.
@@ -147,7 +147,7 @@ def produce_answer(question, llm_chain, choice, live=False):
     LLM Answer: {"task": "event_prediction", "events_sequence": ["s11", "s12"]}
     4. User question: What is the cost of executing load_1, process_1, unload_1, load_2?
     LLM Answer: {"task": "simulation_cost", "events_sequence": ["s11", "s12", "s13", "s21"]}"""
-    context = f'The allowed tasks are: failure_mode_analysis, event_prediction, process_cost, verification.\n\nThe labels for the events are: {factory.get_event_symbols()}'
+    context = f'The allowed tasks are: failure_mode_analysis, event_prediction, process_cost, verification.\n\nThe labels for the events are: {automata_data['event_symbols']}'
     complete_answer = llm_chain.invoke({"question": question,
                                             "context": context,
                                             "system_message": sys_mess})
@@ -158,7 +158,7 @@ def produce_answer(question, llm_chain, choice, live=False):
     sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
     Report the results given by the factory automata provided in the context to the user.
     If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
-    context = f'The labels for the events are: {factory.get_event_symbols()}\n'
+    context = f'The labels for the events are: {automata_data['event_symbols']}\n'
     context += f'Results from the automaton: {results}'
     complete_answer = llm_chain.invoke({"question": question,
                                         "context": context,
@@ -169,7 +169,7 @@ def produce_answer(question, llm_chain, choice, live=False):
 
 
 def produce_answer_double_llm(question, llm_chain, choice, live=False, chain2=None):
-    factory = WeightedFactory()
+    automata_data = retrieve_automata()
     sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
     Use the following pieces of context to generate from the user question a JSON object containing one of the allowed task and the provided event sequence (if any).
     If the user question does not match an allowed tasks kindly refuse to answer.
@@ -182,7 +182,7 @@ def produce_answer_double_llm(question, llm_chain, choice, live=False, chain2=No
     LLM Answer: {"task": "event_prediction", "events_sequence": ["s11", "s12"]}
     4. User question: What is the cost of executing load_1, process_1, unload_1, load_2?
     LLM Answer: {"task": "simulation_cost", "events_sequence": ["s11", "s12", "s13", "s21"]}"""
-    context = f'The allowed tasks are: simulation, event_prediction, simulation_with_cost.\n\nThe labels for the events are: {factory.get_event_symbols()}'
+    context = f'The allowed tasks are: simulation, event_prediction, simulation_with_cost.\n\nThe labels for the events are: {automata_data['event_symbols']}'
     complete_answer = llm_chain.invoke({"question": question,
                                         "context": context,
                                         "system_message": sys_mess})
@@ -193,7 +193,7 @@ def produce_answer_double_llm(question, llm_chain, choice, live=False, chain2=No
     sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
     Report the results given by the factory automata provided in the context to the user.
     If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
-    context = f'The labels for the events are: {factory.get_event_symbols()}\n'
+    context = f'The labels for the events are: {automata_data['event_symbols']}\n'
     context += f'Results from the automaton: {results}'
     complete_answer = chain2.invoke({"question": question,
                                     "context": context,

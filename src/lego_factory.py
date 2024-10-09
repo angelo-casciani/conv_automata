@@ -1,53 +1,16 @@
 import random
-import simpy
+from utility import retrieve_automata
+
 
 class FactoryAutomata:
     def __init__(self, env):
         self.env = env
         self.state = '_init_'
-        self.transitions = {
-            '_init_': {'s11': 'q_0'},
-            'q_0': {'s15': 'q_17', 's12': 'q_1', 's13': 'q_2'},
-            'q_1': {'s15': 'q_17', 's13': 'q_2', 's14': 'q_3'},
-            'q_2': {'s21': 'q_4'},
-            'q_3': {'s13': 'q_2'},
-            'q_4': {'s22': 'q_5'},
-            'q_5': {'s23': 'q_6'},
-            'q_6': {'s41': 'q_7', 's31': 'q_14'},
-            'q_7': {'s42': 'q_8'},
-            'q_8': {'s43': 'q_9'},
-            'q_9': {'s51': 'q_10'},
-            'q_10': {'s52': 'q_11'},
-            'q_11': {'s54': 'q_13', 's53': 'q_12'},
-            'q_12': {'s11': 'q_0'},
-            'q_13': {'s53': 'q_12'},
-            'q_14': {'s32': 'q_15'},
-            'q_15': {'s33': 'q_16'},
-            'q_16': {'s51': 'q_10'},
-            'q_17': {'s13': 'q_2'}
-        }
-        self.event_symbols = {
-            's11': '_load_1', 's12': '_process_1', 's13': '_unload_1',
-            's14': '_fail_1', 's15': '_block_1', 's21': '_load_2',
-            's22': '_process_2', 's23': '_unload_2', 's24': '_block_2',
-            's31': '_load_3', 's32': '_process_3', 's33': '_unload_3',
-            's34': '_block_3', 's41': '_load_4', 's42': '_process_4',
-            's43': '_unload_4', 's44': '_block_4', 's51': '_load_5',
-            's52': '_process_5', 's53': '_unload_5', 's54': '_fail_5',
-            's55': '_block_5'
-        }
-        self.event_probabilities = {
-            '_init_': {'s11': 1},
-            'q_0': {'s15': 0.2, 's12': 0.5, 's13': 0.3},
-            'q_1': {'s15': 0.3, 's13': 0.5, 's14': 0.2},
-            'q_2': {'s21': 1}, 'q_3': {'s13': 1}, 'q_4': {'s22': 1},
-            'q_5': {'s23': 1}, 'q_6': {'s41': 0.5, 's31': 0.5},
-            'q_7': {'s42': 1}, 'q_8': {'s43': 1}, 'q_9': {'s51': 1},
-            'q_10': {'s52': 1}, 'q_11': {'s54': 0.2, 's53': 0.8},
-            'q_12': {'s11': 1}, 'q_13': {'s53': 1}, 'q_14': {'s32': 1},
-            'q_15': {'s33': 1}, 'q_16': {'s51': 1}, 'q_17': {'s13': 1}
-        }
-        self.failure_states = ['_fail_1', '_fail_5']
+        data = retrieve_automata()
+        self.transitions = data['transitions']
+        self.event_symbols = data['event_symbols']
+        self.event_probabilities = data['event_probabilities']
+        self.failure_states = data['failure_states']
         self.path = []
 
     def get_state(self):
@@ -128,15 +91,12 @@ class WeightedFactory(FactoryAutomata):
         print(f"{self.env.now}: Cost after event {event}: {self.cost}")
 
     def get_transition_cost(self, event):
-        cost_mapping = {'s11': 3, 's12': 5, 's13': 3, 's14': 10, 's15': 8,
-                        's21': 3, 's22': 5, 's23': 3, 's24': 8,
-                        's31': 3, 's32': 5, 's33': 3, 's34': 8,
-                        's41': 3, 's42': 5, 's43': 3, 's44': 8,
-                        's51': 3, 's52': 5, 's53': 3, 's54': 10, 's55': 8}
+        data = retrieve_automata()
+        cost_mapping = data['cost_mapping']
         return cost_mapping.get(event, 0)
 
-"""
-def main():
+
+"""def main():
     print('Simulate factory and trigger a failure.')
     env = simpy.Environment()
     #factory = FactoryAutomata(env)
@@ -153,5 +113,4 @@ def main():
     print('\n')
 
 if __name__ == "__main__":
-    main()
-"""
+    main()"""

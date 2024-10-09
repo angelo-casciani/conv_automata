@@ -66,3 +66,11 @@ def extract_json(llm_answer):
         except json.JSONDecodeError:
             pass
     return json_str
+
+
+def retrieve_automata():
+    model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'factory_automaton.json')
+    with open(model_path, 'r') as file:
+        data = json.load(file)
+    
+    return data
