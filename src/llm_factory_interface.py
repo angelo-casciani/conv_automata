@@ -50,19 +50,6 @@ def trigger_simulation_with_cost(events_sequence=None):
     results = captured_output.getvalue()
     return results
 
-"""
-TO SUPPORT AGAIN WITH THE UPPAAL INTEGRATION
-
-def trigger_verification(events_sequence):
-    factory = FactoryAutomata()
-    results = ''
-    for event in events_sequence:
-        res = factory.trigger(event)
-        results += f"{res}\n"
-    results += factory.verify_process_completion()
-    return results
-"""
-
 
 def interface_with_llm(llm_answer):
     json_request = extract_json(llm_answer)
@@ -71,16 +58,13 @@ def interface_with_llm(llm_answer):
     factory_output = ''
 
     if task == "simulation":
-        return trigger_simulation(events_sequence)
+        factory_output = trigger_simulation(events_sequence)
     elif task == "event_prediction":
-        return trigger_event_prediction(events_sequence)
+        factory_output = trigger_event_prediction(events_sequence)
     elif task == "simulation_cost":
-        return trigger_simulation_with_cost(events_sequence)
-    # elif task == "verification":
-    #    return trigger_verification(events_sequence)
+        factory_output = trigger_simulation_with_cost(events_sequence)
     
     json_request["results"] = factory_output
-    print(json_request)
     return json_request
 
 

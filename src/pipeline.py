@@ -169,20 +169,21 @@ def produce_answer(question, llm_chain, choice, live=False):
     return prompt, answer
 
 
-def produce_answer_double_llm(question, llm_chain, choice, live=False, chain2=None):
+def produce_answer_double_llm_sim(question, llm_chain, choice, live=False, chain2=None):
     automata_data = retrieve_automata()
     sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
     Use the following pieces of context to generate from the user question a JSON object containing one of the allowed task and the provided event sequence (if any).
     If the user question does not match an allowed tasks kindly refuse to answer.
+    
     Examples:
-    1. User question: Carry out a simulation to check if the sequence _load_1, _process_1, _fail_1 leads to a failure.
-    LLM Answer: {"task": "simulation", "events_sequence": ["s11", "s12", "s14"]}
-    2. User question: Simulate the execution of the production process.
-    LLM Answer: {"task": "simulation", "events_sequence": []}
-    3. User question: what is the next event possible after executing  _load_1, _process_1? 
-    LLM Answer: {"task": "event_prediction", "events_sequence": ["s11", "s12"]}
-    4. User question: What is the cost of executing load_1, process_1, unload_1, load_2?
-    LLM Answer: {"task": "simulation_cost", "events_sequence": ["s11", "s12", "s13", "s21"]}"""
+    1. Input (Natural Language Query): Carry out a simulation to check if the sequence _load_1, _process_1, _fail_1 leads to a failure.
+       Output (LLM answer with Uppaal Query): {"task": "simulation", "events_sequence": ["s11", "s12", "s14"], "query_nl": "Carry out a simulation to check if the sequence _load_1, _process_1, _fail_1 leads to a failure."}
+    2. Input (Natural Language Query): Simulate the execution of the production process.
+       Output (LLM answer with Uppaal Query): {"task": "simulation", "events_sequence": [], "query_nl": "Simulate the execution of the production process."}
+    3. Input (Natural Language Query): What is the next event possible after executing  _load_1, _process_1? 
+       Output (LLM answer with Uppaal Query): {"task": "event_prediction", "events_sequence": ["s11", "s12"], "query_nl": "What is the next event possible after executing  _load_1, _process_1?"}
+    4. Input (Natural Language Query): What is the cost of executing load_1, process_1, unload_1, load_2?
+       Output (LLM answer with Uppaal Query): {"task": "simulation_cost", "events_sequence": ["s11", "s12", "s13", "s21"], "query_nl": "What is the cost of executing load_1, process_1, unload_1, load_2?"}"""
     context = f"The allowed tasks are: simulation, event_prediction, simulation_with_cost.\n\nThe labels for the events are: {automata_data['event_symbols']}"
     complete_answer = llm_chain.invoke({"question": question,
                                         "context": context,
@@ -278,7 +279,7 @@ def produce_answer_live(question, curr_datetime, model_chain, choice, chain2=Non
             complete_prompt, answer = produce_answer_double_llm_uppaal(question, model_chain, choice, True,
                                                             chain2)
         else:
-            complete_prompt, answer = produce_answer_double_llm(question, model_chain, choice, True,
+            complete_prompt, answer = produce_answer_double_llm_sim(question, model_chain, choice, True,
                                                             chain2)
     else:
         complete_prompt, answer = produce_answer(question, model_chain, choice, True)
