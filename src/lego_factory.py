@@ -88,7 +88,7 @@ class WeightedFactory(FactoryAutomata):
         transition_cost = self.get_transition_cost(event)
         self.cost += transition_cost
         yield from super().trigger(event)
-        print(f"{self.env.now}: Cost after event {event}: {self.cost}")
+        print(f"{self.env.now}: Total execution cost after event {event}: {self.cost}")
 
     def get_transition_cost(self, event):
         data = retrieve_automata()

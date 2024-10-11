@@ -27,11 +27,11 @@ def parse_arguments():
 
 def main():
     print("""Welcome! The tasks that are possible on the LEGO Factory automata are:
-          - Simulation of the whole production process;
-          - Simulation with specified sequence of events;
-          - Event Prediction;
-          - Simulation with cost analysis;
-          - Verification of temporal properties.\n""")
+          - Simulation of the whole production process (SimPy);
+          - Simulation with specified sequence of events (SimPy);
+          - Event Prediction (SimPy);
+          - Simulation with cost analysis (SimPy);
+          - Verification of temporal properties (Uppaal).\n""")
 
     args = parse_arguments()
 
@@ -40,7 +40,7 @@ def main():
     chain = initialize_chain(model_id, HF_AUTH, max_new_tokens)
     chain2 = initialize_chain(model_id, HF_AUTH, max_new_tokens)
 
-    live_prompting(chain, model_id, chain2, verification=True)
+    live_prompting(chain, model_id, chain2, verification=False)
 
 
 if __name__ == "__main__":
