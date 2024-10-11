@@ -4,9 +4,8 @@ import tempfile
 from utility import extract_json
 
 
-# UPPAAL_PATH = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', 'opt', 'uppaal', 'lib', 'app', 'bin', 'verifyta')
-UPPAAL_PATH = os.path.join(os.path.dirname(__file__), 'uppaal', 'lib', 'app', 'bin', 'verifyta')
-MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', 'models', 'lego_SKG_item-10_no_doubles.xml')
+UPPAAL_PATH = os.path.join('uppaal', 'lib', 'app', 'bin', 'verifyta')
+MODEL_PATH = os.path.join('..', 'models', 'lego_SKG_item-10_no_doubles.xml')
 
 
 def interface_with_llm(llm_answer):
@@ -20,7 +19,6 @@ def interface_with_llm(llm_answer):
         uppaal_output = execute_query(formal_query)
     
     json_request["results"] = uppaal_output
-    #print(json_request)
     return json_request
 
 
@@ -31,7 +29,6 @@ def execute_query(query):
         process = subprocess.Popen([UPPAAL_PATH, MODEL_PATH, temp_query_file.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         stdout, stderr = process.communicate()
         result = format_uppaal_output(stdout)
-        #return f"Natural Language Query: {query_nl}\nFormal Query: {query}\nResult: {result}\nErrors: {stderr}"
         return f"Result: {result}\nErrors: {stderr}"
 
 

@@ -230,7 +230,7 @@ def produce_answer_double_llm_uppaal(question, llm_chain, choice, live=False, ch
     A[]: "Always" (checks if something always holds).
     E[]: "Exists" (checks if there's a path where something holds forever).
     simulate[...]: Simulates the system behavior over a time period.
-    p --> q (in Uppaal, written as p --> q): Whenever p holds, q will eventually hold.
+    p --> q (in Uppaal, written as p --> q): Whenever p holds, q will eventually hold (not allowed within the scope of a quantifier).
     Given a query in natural language, you will translate it into an Uppaal query compatible with the model.
 
     Examples:
