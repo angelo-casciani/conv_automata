@@ -12,7 +12,6 @@ MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', 'models', 'lego_SKG_i
 def interface_with_llm(llm_answer):
     json_request = extract_json(llm_answer)
     task = json_request.get("task")
-    #nl_query = json_request.get("nl_query")
     formal_query = json_request.get("uppaal_query")
     uppaal_output = ''
 
@@ -20,7 +19,6 @@ def interface_with_llm(llm_answer):
         uppaal_output = execute_query(formal_query)
     
     json_request["results"] = uppaal_output
-    #print(json_request)
     return json_request
 
 
@@ -42,12 +40,6 @@ def format_uppaal_output(uppaal_answer):
 
 
 
-"""QUERIES = [
-    "A<> s.q_1",
-    "E<> s.q_1",
-    "s.q_0 --> s.q_6"
-]
-
-query_nl = 'Test'
+"""QUERIES = ["A<> s.q_1", "E<> s.q_1", "s.q_0 --> s.q_6"]
 for query in QUERIES:
     print(execute_query(query))"""
