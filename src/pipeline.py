@@ -4,7 +4,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, BitsAndB
 from torch import bfloat16
 
 import datetime
-import llm_factory_interface as interface
+import llm_factory_interface as factory_interface
+import uppaal_interface
 from utility import log_to_file, retrieve_automata
 
 
@@ -154,7 +155,7 @@ def produce_answer(question, llm_chain, choice, live=False):
     prompt, answer = parse_llm_answer(complete_answer, choice)
 
     print(complete_answer)
-    results = interface.interface_with_llm(answer)
+    results = factory_interface.interface_with_llm(answer)
     sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
     Report the results given by the factory automata provided in the context to the user.
     If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
@@ -189,7 +190,7 @@ def produce_answer_double_llm(question, llm_chain, choice, live=False, chain2=No
     prompt, answer = parse_llm_answer(complete_answer, choice)
 
     print(complete_answer)
-    results = interface.interface_with_llm(answer)
+    results = factory_interface.interface_with_llm(answer)
     sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
     Report the results given by the factory automata provided in the context to the user.
     If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
@@ -218,9 +219,66 @@ def parse_llm_answer(compl_answer, llm_choice):
     return prompt, answer
 
 
-def produce_answer_live(question, curr_datetime, model_chain, choice, chain2=None):
+def produce_answer_double_llm_uppaal(question, llm_chain, choice, live=False, chain2=None):
+    automata_data = retrieve_automata()
+    sys_mess = """You are an assistant that translates natural language queries into a JSON object containing 
+    the Uppaal syntax to be verified against a timed automaton. The automaton has several locations (states) such as q_1, q_6, and q_11, and uses variables like x (a clock), Tcdf (for time bounds), and loc_entity, edge_entity (for entities in the system). Remember that x is a local clock in the template instance s, so it must be referenced as s.x.
+
+    The properties in Uppaal are typically expressed using Computation Tree Logic (CTL) and involve temporal operators such as:
+    A<>: "Always eventually" (checks if something will always eventually happen).
+    E<>: "Exists eventually" (checks if there is at least one path where something eventually happens).
+    A[]: "Always" (checks if something always holds).
+    E[]: "Exists" (checks if there's a path where something holds forever).
+    simulate[...]: Simulates the system behavior over a time period.
+    p --> q (in Uppaal, written as p --> q): Whenever p holds, q will eventually hold.
+    Given a query in natural language, you will translate it into an Uppaal query compatible with the model.
+
+    Examples:
+    1. Input (Natural Language Query): "Check if the system will always eventually reach state q_1."
+       Output (LLM answer with Uppaal Query): {"task": "verification", "query_nl": "Check if the system will always eventually reach state q_1.", "uppaal_query": "A<> s.q_1"}
+    2. Input (Natural Language Query): "Is there a path where state q_1 is reached?"
+       Output (LLM answer with Uppaal Query): {"task": "verification", "query_nl": "Is there a path where state q_1 is reached?", "uppaal_query": "E<> s.q_1"}
+    3. Input (Natural Language Query): "Simulate the system for up to 30 time units and track the states of all locations and the entity's location and edge."
+       Output (LLM answer with Uppaal Query): {"task": "verification", "query_nl": "Simulate the system for up to 30 time units and track the states of all locations and the entity's location and edge.", "uppaal_query": "simulate[<=30]{s.q_1, s.q_6, s.q_11, s.q_10, s.q_0, s.q_13, s.__init__, s.q_3, s.q_4, s.q_12, s.q_14, s.q_9, s.q_5, s.q_7, s.q_8, s.q_2, s.loc_entity, s.edge_entity}"}
+    4. Input (Natural Language Query): "Check if the system can always stay in state q_0 for up to 30 time units."
+       Output (LLM answer with Uppaal Query): {"task": "verification", "query_nl": "Check if the system can always stay in state q_0 for up to 30 time units.", "uppaal_query": "A[] s.q_0 && s.x <= 30"}
+    5. Input (Natural Language Query): "Is there any path where the system stays in state q_3 forever?"
+       Output (LLM answer with Uppaal Query): {"task": "verification", "query_nl": "Is there any path where the system stays in state q_3 forever?", "uppaal_query": "E[] s.q_3"}
+    6. Input (Natural Language Query): "Simulate the system over time and check the location and edge entity variables."
+       Output (LLM answer with Uppaal Query): {"task": "verification", "query_nl": "Simulate the system over time and check the location and edge entity variables.", "uppaal_query": "E[] s.q_3"}
+    7. Input (Natural Language Query): "Check if state q_6 is reachable within 15 time units."
+       Output (LLM answer with Uppaal Query): {"task": "verification", "query_nl": "Check if state q_6 is reachable within 15 time units.", "uppaal_query": "E<> s.q_6 && s.x <= 15"}
+    8. Input (Natural Language Query): "Whenever the system reaches q_0, it will eventually reach q_6."
+       Output (LLM answer with Uppaal Query): {"task": "verification", "query_nl": "Whenever the system reaches q_0, it will eventually reach q_6.", "uppaal_query": "s.q_0 --> s.q_6"}
+    
+    Use these examples to translate additional queries and construct the Uppaal syntax based on the model provided in the context. Always ensure that the queries fit the automaton's structure, and when referring to local variables like clocks, prefix them with the template instance name (e.g., s.x for the clock x in the DiscoveredSystem template)."""
+    context = f"The automaton states are: {list(automata_data['transitions'].keys())}"
+    complete_answer = llm_chain.invoke({"question": question,
+                                        "context": context,
+                                        "system_message": sys_mess})
+    prompt, answer = parse_llm_answer(complete_answer, choice)
+
+    print(complete_answer)
+    results = factory_interface.interface_with_llm(answer)
+    sys_mess = """You are a conversational interface towards the Uppaal verifier.
+    Report the results given by Uppaal provided in the context to the user.
+    If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
+    context = f'Results from Uppaal: {results}'
+    complete_answer = chain2.invoke({"question": question,
+                                    "context": context,
+                                    "system_message": sys_mess})
+    prompt, answer = parse_llm_answer(complete_answer, choice)
+
+    return prompt, answer
+
+
+def produce_answer_live(question, curr_datetime, model_chain, choice, chain2=None, verification = False):
     if chain2 is not None:
-        complete_prompt, answer = produce_answer_double_llm(question, model_chain, choice, True,
+        if verification:
+            complete_prompt, answer = produce_answer_double_llm_uppaal(question, model_chain, choice, True,
+                                                            chain2)
+        else:
+            complete_prompt, answer = produce_answer_double_llm(question, model_chain, choice, True,
                                                             chain2)
     else:
         complete_prompt, answer = produce_answer(question, model_chain, choice, True)
@@ -232,7 +290,7 @@ def produce_answer_live(question, curr_datetime, model_chain, choice, chain2=Non
                 curr_datetime)
 
 
-def live_prompting(model1, choice, chain2=None):
+def live_prompting(model1, choice, chain2=None, verification = False):
     current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     while True:
         query = input('Insert the query you want to ask (type "quit" to exit): ')
@@ -242,7 +300,7 @@ def live_prompting(model1, choice, chain2=None):
             break
 
         if chain2 is not None:
-            produce_answer_live(query, current_datetime, model1, choice, chain2)
+            produce_answer_live(query, current_datetime, model1, choice, chain2, verification)
         else:
             produce_answer_live(query, current_datetime, model1, choice)
         print()

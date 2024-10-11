@@ -8,9 +8,9 @@ from pipeline import *
 from utility import *
 
 
-device = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
+DEVICE = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
 load_dotenv()
-hf_auth = os.getenv('HF_TOKEN')
+HF_AUTH = os.getenv('HF_TOKEN')
 SEED = 10
 warnings.filterwarnings('ignore')
 
@@ -27,19 +27,20 @@ def parse_arguments():
 
 def main():
     print("""Welcome! The tasks that are possible on the LEGO Factory automata are:
-          1. Simulation
-          2. Simulation with specified sequence of events
-          3. Event Prediction
-          4. Simulation with cost analysis\n""")
+          - Simulation of the whole production process;
+          - Simulation with specified sequence of events;
+          - Event Prediction;
+          - Simulation with cost analysis;
+          - Verification of temporal properties.\n""")
 
     args = parse_arguments()
 
     model_id = args.llm_id
     max_new_tokens = args.max_new_tokens
-    chain = initialize_chain(model_id, hf_auth, max_new_tokens)
-    chain2 = initialize_chain(model_id, hf_auth, max_new_tokens)
+    chain = initialize_chain(model_id, HF_AUTH, max_new_tokens)
+    chain2 = initialize_chain(model_id, HF_AUTH, max_new_tokens)
 
-    live_prompting(chain, model_id, chain2)
+    live_prompting(chain, model_id, chain2, verification=True)
 
 
 if __name__ == "__main__":
