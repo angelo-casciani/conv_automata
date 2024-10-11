@@ -259,7 +259,7 @@ def produce_answer_double_llm_uppaal(question, llm_chain, choice, live=False, ch
     prompt, answer = parse_llm_answer(complete_answer, choice)
 
     print(complete_answer)
-    results = factory_interface.interface_with_llm(answer)
+    results = uppaal_interface.interface_with_llm(answer)
     sys_mess = """You are a conversational interface towards the Uppaal verifier.
     Report the results given by Uppaal provided in the context to the user.
     If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
