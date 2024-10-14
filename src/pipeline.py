@@ -143,32 +143,39 @@ def parse_llm_answer(compl_answer, llm_choice):
 
     index = compl_answer.find(delimiter)
     prompt = compl_answer[:index + len(delimiter)]
-    answer = compl_answer[index + len(delimiter):]  
-    
+    answer = compl_answer[index + len(delimiter):]
+
     return prompt, answer
 
 
 def produce_answer_interface_llm(question, model_id, llm_chain, answer_phase):
+    prompt, answer = ('', '')
     if answer_phase == 'routing':
         automata_data = retrieve_automata()
-        sys_mess = "You are a conversational gateway that redirects user queries related to the factory's automata to the appropriate task handler based on the context."
+        sys_mess = """You are a conversational gateway that redirects user queries related to the factory's automata 
+        to the appropriate task handler based on the context.
+        You don't have to answer to the user question!
+        Just use it to route the request to the appropriate task handler"""
         context = f"""Rules for routing:
-        - If the query involves verifying temporal properties (e.g., deadlocks, reachability) in the factory automata, generate a response containing the string "uppaal_verification."
-        - If the query involves simulating the factory automata, predicting the next event, or estimating costs, generate a response containing the string "factory_simulation."
-        - For any other queries that don't match these categories, inform the user that their request does not align with the supported tasks.
+        - If the query involves verifying temporal properties (e.g., deadlocks, reachability) in the factory automata,
+          generate a response containing the string "uppaal_verification."
+        - If the query involves simulating the factory automata, predicting the next event, or estimating costs, 
+          generate a response containing the string "factory_simulation."
+        - For any other queries that don't match these categories, inform the user that their request does not align 
+          with the supported tasks.
         The labels for the events are: {automata_data['event_symbols']}.
         The automaton states are: {list(automata_data['transitions'].keys())}."""
         complete_answer = llm_chain.invoke({"question": question,
-                                                "context": context,
-                                                "system_message": sys_mess})
+                                            "context": context,
+                                            "system_message": sys_mess})
         prompt, answer = parse_llm_answer(complete_answer, model_id)
     elif answer_phase == 'negative_response':
         sys_mess = """You are a conversational interface towards an automaton of the LEGO factory.
         Answer the user question saying it does not match any allowed tasks."""
         context = ''
         complete_answer = llm_chain.invoke({"question": question,
-                                                "context": context,
-                                                "system_message": sys_mess})
+                                            "context": context,
+                                            "system_message": sys_mess})
         prompt, answer = parse_llm_answer(complete_answer, model_id)
 
     return prompt, answer
@@ -203,8 +210,8 @@ def produce_answer_simulation(question, choice, llm_simpy, llm_answer):
     context = f"The labels for the events are: {automata_data['event_symbols']}\n"
     context += f'Results from the automaton: {results}'
     complete_answer = llm_answer.invoke({"question": question,
-                                    "context": context,
-                                    "system_message": sys_mess})
+                                         "context": context,
+                                         "system_message": sys_mess})
     prompt, answer = parse_llm_answer(complete_answer, choice)
 
     return prompt, answer
@@ -245,8 +252,8 @@ def produce_answer_uppaal(question, choice, llm_uppaal, llm_answer):
     Use these examples to translate additional queries and construct the Uppaal syntax based on the model provided in the context. Always ensure that the queries fit the automaton's structure, and when referring to local variables like clocks, prefix them with the template instance name (e.g., s.x for the clock x in the DiscoveredSystem template)."""
     context = f"The automaton states are: {list(automata_data['transitions'].keys())}"
     complete_answer = llm_uppaal.invoke({"question": question,
-                                        "context": context,
-                                        "system_message": sys_mess})
+                                         "context": context,
+                                         "system_message": sys_mess})
     prompt, answer = parse_llm_answer(complete_answer, choice)
 
     print(complete_answer)
@@ -256,8 +263,8 @@ def produce_answer_uppaal(question, choice, llm_uppaal, llm_answer):
     If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
     context = f'Results from Uppaal: {results}'
     complete_answer = llm_answer.invoke({"question": question,
-                                    "context": context,
-                                    "system_message": sys_mess})
+                                         "context": context,
+                                         "system_message": sys_mess})
     prompt, answer = parse_llm_answer(complete_answer, choice)
 
     return prompt, answer
@@ -268,11 +275,11 @@ def generate_response(question, curr_datetime, model_id, model_factory, model_up
     print(f'Prompt: {complete_prompt}\n')
     print(f'Answer: {answer}\n')
     print('--------------------------------------------------')
-    
+
     if 'uppaal_verification' in answer.lower():
-        complete_prompt, answer = produce_answer_uppaal(question, model_uppaal, model_id, model_answer)
+        complete_prompt, answer = produce_answer_uppaal(question, model_id, model_uppaal, model_answer)
     elif 'factory_simulation' in answer.lower():
-        complete_prompt, answer = produce_answer_simulation(question, model_factory, model_id, model_answer)
+        complete_prompt, answer = produce_answer_simulation(question, model_id, model_factory, model_answer)
     else:
         complete_prompt, answer = produce_answer_interface_llm(question, model_id, model_answer, 'negative_response')
 
