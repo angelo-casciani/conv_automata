@@ -37,10 +37,11 @@ def main():
 
     model_id = args.llm_id
     max_new_tokens = args.max_new_tokens
-    chain = initialize_chain(model_id, HF_AUTH, max_new_tokens)
-    chain2 = initialize_chain(model_id, HF_AUTH, max_new_tokens)
+    chain_factory = initialize_chain(model_id, HF_AUTH, max_new_tokens)
+    chain_uppaal = initialize_chain(model_id, HF_AUTH, max_new_tokens)
+    chain_answer = initialize_chain(model_id, HF_AUTH, max_new_tokens)
 
-    live_prompting(chain, model_id, chain2, verification=False)
+    live_prompting(model_id, chain_factory, chain_uppaal, chain_answer)
 
 
 if __name__ == "__main__":

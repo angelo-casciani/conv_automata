@@ -133,78 +133,6 @@ def initialize_chain(model_id, hf_auth, max_new_tokens):
     return chain
 
 
-def produce_answer(question, llm_chain, choice, live=False):
-    automata_data = retrieve_automata()
-    sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
-    Use the following pieces of context to generate from the user question a JSON object containing one of the allowed task and the provided event sequence (if any).
-    If the user question does not match an allowed tasks kindly refuse to answer.
-    Examples:
-    1. User question: Carry out a simulation to check if the sequence _load_1, _process_1, _fail_1 leads to a failure.
-    LLM Answer: {"task": "simulation", "events_sequence": ["s11", "s12", "s14"]}
-    2. User question: Simulate the execution of the production process.
-    LLM Answer: {"task": "simulation", "events_sequence": []}
-    Note: when no sequence of events is passed in input, the JSON key "events_sequence" has the empty list [] as value.
-    3. User question: what is the next event possible after executing  _load_1, _process_1? 
-    LLM Answer: {"task": "event_prediction", "events_sequence": ["s11", "s12"]}
-    4. User question: What is the cost of executing load_1, process_1, unload_1, load_2?
-    LLM Answer: {"task": "simulation_cost", "events_sequence": ["s11", "s12", "s13", "s21"]}"""
-    context = f"The allowed tasks are: failure_mode_analysis, event_prediction, process_cost, verification.\n\nThe labels for the events are: {automata_data['event_symbols']}"
-    complete_answer = llm_chain.invoke({"question": question,
-                                            "context": context,
-                                            "system_message": sys_mess})
-    prompt, answer = parse_llm_answer(complete_answer, choice)
-
-    print(complete_answer)
-    results = factory_interface.interface_with_llm(answer)
-    sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
-    Report the results given by the factory automata provided in the context to the user.
-    If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
-    context = f"The labels for the events are: {automata_data['event_symbols']}\n"
-    context += f'Results from the automaton: {results}'
-    complete_answer = llm_chain.invoke({"question": question,
-                                        "context": context,
-                                        "system_message": sys_mess})
-    prompt, answer = parse_llm_answer(complete_answer, choice)
-
-    return prompt, answer
-
-
-def produce_answer_double_llm_sim(question, llm_chain, choice, live=False, chain2=None):
-    automata_data = retrieve_automata()
-    sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
-    Use the following pieces of context to generate from the user question a JSON object containing one of the allowed task and the provided event sequence (if any).
-    If the user question does not match an allowed tasks kindly refuse to answer.
-    
-    Examples:
-    1. Input (Natural Language Query): Carry out a simulation to check if the sequence _load_1, _process_1, _fail_1 leads to a failure.
-       Output (LLM answer with Uppaal Query): {"task": "simulation", "events_sequence": ["s11", "s12", "s14"], "query_nl": "Carry out a simulation to check if the sequence _load_1, _process_1, _fail_1 leads to a failure."}
-    2. Input (Natural Language Query): Simulate the execution of the production process.
-       Output (LLM answer with Uppaal Query): {"task": "simulation", "events_sequence": [], "query_nl": "Simulate the execution of the production process."}
-    3. Input (Natural Language Query): What is the next event possible after executing  _load_1, _process_1? 
-       Output (LLM answer with Uppaal Query): {"task": "event_prediction", "events_sequence": ["s11", "s12"], "query_nl": "What is the next event possible after executing  _load_1, _process_1?"}
-    4. Input (Natural Language Query): What is the cost of executing load_1, process_1, unload_1, load_2?
-       Output (LLM answer with Uppaal Query): {"task": "simulation_cost", "events_sequence": ["s11", "s12", "s13", "s21"], "query_nl": "What is the cost of executing load_1, process_1, unload_1, load_2?"}"""
-    context = f"The allowed tasks are: simulation, event_prediction, simulation_with_cost.\n\nThe labels for the events are: {automata_data['event_symbols']}"
-    complete_answer = llm_chain.invoke({"question": question,
-                                        "context": context,
-                                        "system_message": sys_mess})
-    prompt, answer = parse_llm_answer(complete_answer, choice)
-
-    print(complete_answer)
-    results = factory_interface.interface_with_llm(answer)
-    sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
-    Report the results given by the factory automata provided in the context to the user.
-    If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
-    context = f"The labels for the events are: {automata_data['event_symbols']}\n"
-    context += f'Results from the automaton: {results}'
-    complete_answer = chain2.invoke({"question": question,
-                                    "context": context,
-                                    "system_message": sys_mess})
-    prompt, answer = parse_llm_answer(complete_answer, choice)
-
-    return prompt, answer
-
-
 def parse_llm_answer(compl_answer, llm_choice):
     if 'meta-llama/Meta-Llama-3' in llm_choice or 'llama3dot1' in llm_choice:
         delimiter = '<|start_header_id|>assistant<|end_header_id|>'
@@ -220,7 +148,68 @@ def parse_llm_answer(compl_answer, llm_choice):
     return prompt, answer
 
 
-def produce_answer_double_llm_uppaal(question, llm_chain, choice, live=False, chain2=None):
+def produce_answer_interface_llm(question, model_id, llm_chain, answer_phase):
+    if answer_phase == 'routing':
+        automata_data = retrieve_automata()
+        sys_mess = "You are a conversational gateway that redirects user queries related to the factory's automata to the appropriate task handler based on the context."
+        context = f"""Rules for routing:
+        - If the query involves verifying temporal properties (e.g., deadlocks, reachability) in the factory automata, generate a response containing the string "uppaal_verification."
+        - If the query involves simulating the factory automata, predicting the next event, or estimating costs, generate a response containing the string "factory_simulation."
+        - For any other queries that don't match these categories, inform the user that their request does not align with the supported tasks.
+        The labels for the events are: {automata_data['event_symbols']}"""
+        complete_answer = llm_chain.invoke({"question": question,
+                                                "context": context,
+                                                "system_message": sys_mess})
+        prompt, answer = parse_llm_answer(complete_answer, model_id)
+    elif answer_phase == 'negative_response':
+        sys_mess = """You are a conversational interface towards an automaton of the LEGO factory.
+        Answer the user question saying it does not match any allowed tasks."""
+        context = ''
+        complete_answer = llm_chain.invoke({"question": question,
+                                                "context": context,
+                                                "system_message": sys_mess})
+        prompt, answer = parse_llm_answer(complete_answer, model_id)
+
+    return prompt, answer
+
+
+def produce_answer_simulation(question, choice, llm_simpy, llm_answer):
+    automata_data = retrieve_automata()
+    sys_mess = """You are a conversational interface towards an automaton of the LEGO factory.
+    Use the following pieces of context to generate from the user question a JSON object containing one of the allowed task and the provided event sequence (if any).
+    If the user question does not match an allowed tasks kindly refuse to answer.
+    
+    Examples:
+    1. Input (Natural Language Query): Carry out a simulation to check if the sequence _load_1, _process_1, _fail_1 leads to a failure.
+       Output (LLM answer with Uppaal Query): {"task": "simulation", "events_sequence": ["s11", "s12", "s14"], "query_nl": "Carry out a simulation to check if the sequence _load_1, _process_1, _fail_1 leads to a failure."}
+    2. Input (Natural Language Query): Simulate the execution of the production process.
+       Output (LLM answer with Uppaal Query): {"task": "simulation", "events_sequence": [], "query_nl": "Simulate the execution of the production process."}
+    3. Input (Natural Language Query): What is the next event possible after executing  _load_1, _process_1? 
+       Output (LLM answer with Uppaal Query): {"task": "event_prediction", "events_sequence": ["s11", "s12"], "query_nl": "What is the next event possible after executing  _load_1, _process_1?"}
+    4. Input (Natural Language Query): What is the cost of executing load_1, process_1, unload_1, load_2?
+       Output (LLM answer with Uppaal Query): {"task": "simulation_cost", "events_sequence": ["s11", "s12", "s13", "s21"], "query_nl": "What is the cost of executing load_1, process_1, unload_1, load_2?"}"""
+    context = f"The allowed tasks are: simulation, event_prediction, simulation_with_cost.\n\nThe labels for the events are: {automata_data['event_symbols']}"
+    complete_answer = llm_simpy.invoke({"question": question,
+                                        "context": context,
+                                        "system_message": sys_mess})
+    prompt, answer = parse_llm_answer(complete_answer, choice)
+
+    print(complete_answer)
+    results = factory_interface.interface_with_llm(answer)
+    sys_mess = """You are a conversational interface towards an automata of the LEGO factory.
+    Report the results given by the factory automata provided in the context to the user.
+    If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
+    context = f"The labels for the events are: {automata_data['event_symbols']}\n"
+    context += f'Results from the automaton: {results}'
+    complete_answer = llm_answer.invoke({"question": question,
+                                    "context": context,
+                                    "system_message": sys_mess})
+    prompt, answer = parse_llm_answer(complete_answer, choice)
+
+    return prompt, answer
+
+
+def produce_answer_uppaal(question, choice, llm_uppaal, llm_answer):
     automata_data = retrieve_automata()
     sys_mess = """You are an assistant that translates natural language queries into a JSON object containing 
     the Uppaal syntax to be verified against a timed automaton. The automaton has several locations (states) such as q_1, q_6, and q_11, and uses variables like x (a clock), Tcdf (for time bounds), and loc_entity, edge_entity (for entities in the system). Remember that x is a local clock in the template instance s, so it must be referenced as s.x.
@@ -254,7 +243,7 @@ def produce_answer_double_llm_uppaal(question, llm_chain, choice, live=False, ch
     
     Use these examples to translate additional queries and construct the Uppaal syntax based on the model provided in the context. Always ensure that the queries fit the automaton's structure, and when referring to local variables like clocks, prefix them with the template instance name (e.g., s.x for the clock x in the DiscoveredSystem template)."""
     context = f"The automaton states are: {list(automata_data['transitions'].keys())}"
-    complete_answer = llm_chain.invoke({"question": question,
+    complete_answer = llm_uppaal.invoke({"question": question,
                                         "context": context,
                                         "system_message": sys_mess})
     prompt, answer = parse_llm_answer(complete_answer, choice)
@@ -265,7 +254,7 @@ def produce_answer_double_llm_uppaal(question, llm_chain, choice, live=False, ch
     Report the results given by Uppaal provided in the context to the user.
     If you are not able to derive the answer from the context, just say that you don't know, don't try to make up an answer."""
     context = f'Results from Uppaal: {results}'
-    complete_answer = chain2.invoke({"question": question,
+    complete_answer = llm_answer.invoke({"question": question,
                                     "context": context,
                                     "system_message": sys_mess})
     prompt, answer = parse_llm_answer(complete_answer, choice)
@@ -273,16 +262,19 @@ def produce_answer_double_llm_uppaal(question, llm_chain, choice, live=False, ch
     return prompt, answer
 
 
-def produce_answer_live(question, curr_datetime, model_chain, choice, chain2=None, verification = False):
-    if chain2 is not None:
-        if verification:
-            complete_prompt, answer = produce_answer_double_llm_uppaal(question, model_chain, choice, True,
-                                                            chain2)
-        else:
-            complete_prompt, answer = produce_answer_double_llm_sim(question, model_chain, choice, True,
-                                                            chain2)
+def generate_response(question, curr_datetime, model_id, model_factory, model_uppaal, model_answer):
+    complete_prompt, answer = produce_answer_interface_llm(question, model_id, model_answer, 'routing')
+    print(f'Prompt: {complete_prompt}\n')
+    print(f'Answer: {answer}\n')
+    print('--------------------------------------------------')
+    
+    if 'uppaal_verification' in answer.lower():
+        complete_prompt, answer = produce_answer_uppaal(question, model_uppaal, model_id, model_answer)
+    elif 'factory_simulation':
+        complete_prompt, answer = produce_answer_simulation(question, model_factory, model_id, model_answer)
     else:
-        complete_prompt, answer = produce_answer(question, model_chain, choice, True)
+        complete_prompt, answer = produce_answer_interface_llm(question, model_id, model_answer, 'negative_response')
+
     print(f'Prompt: {complete_prompt}\n')
     print(f'Answer: {answer}\n')
     print('--------------------------------------------------')
@@ -291,7 +283,7 @@ def produce_answer_live(question, curr_datetime, model_chain, choice, chain2=Non
                 curr_datetime)
 
 
-def live_prompting(model1, choice, chain2=None, verification = False):
+def live_prompting(choice_llm, model_factory, model_uppaal, model_answer):
     current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     while True:
         query = input('Insert the query you want to ask (type "quit" to exit): ')
@@ -300,10 +292,7 @@ def live_prompting(model1, choice, chain2=None, verification = False):
             print("Exiting the chat.")
             break
 
-        if chain2 is not None:
-            produce_answer_live(query, current_datetime, model1, choice, chain2, verification)
-        else:
-            produce_answer_live(query, current_datetime, model1, choice)
+        generate_response(query, current_datetime, choice_llm, model_factory, model_uppaal, model_answer)
         print()
 
 
