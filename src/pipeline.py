@@ -156,7 +156,8 @@ def produce_answer_interface_llm(question, model_id, llm_chain, answer_phase):
         - If the query involves verifying temporal properties (e.g., deadlocks, reachability) in the factory automata, generate a response containing the string "uppaal_verification."
         - If the query involves simulating the factory automata, predicting the next event, or estimating costs, generate a response containing the string "factory_simulation."
         - For any other queries that don't match these categories, inform the user that their request does not align with the supported tasks.
-        The labels for the events are: {automata_data['event_symbols']}"""
+        The labels for the events are: {automata_data['event_symbols']}.
+        The automaton states are: {list(automata_data['transitions'].keys())}."""
         complete_answer = llm_chain.invoke({"question": question,
                                                 "context": context,
                                                 "system_message": sys_mess})
@@ -270,7 +271,7 @@ def generate_response(question, curr_datetime, model_id, model_factory, model_up
     
     if 'uppaal_verification' in answer.lower():
         complete_prompt, answer = produce_answer_uppaal(question, model_uppaal, model_id, model_answer)
-    elif 'factory_simulation':
+    elif 'factory_simulation' in answer.lower():
         complete_prompt, answer = produce_answer_simulation(question, model_factory, model_id, model_answer)
     else:
         complete_prompt, answer = produce_answer_interface_llm(question, model_id, model_answer, 'negative_response')
