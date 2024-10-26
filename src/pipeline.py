@@ -9,6 +9,10 @@ import uppaal_interface
 from utility import log_to_file, retrieve_automata
 
 
+llama3_models = ['meta-llama/Meta-Llama-3-8B-Instruct', 'meta-llama/Llama-3.1-8B-Instruct',
+                 'meta-llama/Llama-3.2-1B-Instruct', 'meta-llama/Llama-3.2-3B-Instruct']
+
+
 def initialize_pipeline(model_identifier, hf_token, max_new_tokens):
     """
     Initializes a pipeline for text generation using a pre-trained language model and its tokenizer.
@@ -46,7 +50,7 @@ def initialize_pipeline(model_identifier, hf_token, max_new_tokens):
         model_identifier,
         token=hf_token
     )
-    if 'meta-llama/Meta-Llama-3' in model_identifier or 'llama3dot1' in model_identifier:
+    if model_identifier in llama3_models:
         terminators = [
             tokenizer.eos_token_id,
             tokenizer.convert_tokens_to_ids("<|eot_id|>")
@@ -116,7 +120,7 @@ def generate_prompt_template(model_id):
     Here is the context: {context}
     Here is the question: {question} \n <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
-    if 'meta-llama/Meta-Llama-3' in model_id or 'llama3dot1' in model_id:
+    if model_id in llama3_models:
         prompt = PromptTemplate.from_template(template_llama3)
     else:
         prompt = PromptTemplate.from_template(template)
@@ -134,7 +138,7 @@ def initialize_chain(model_id, hf_auth, max_new_tokens):
 
 
 def parse_llm_answer(compl_answer, llm_choice):
-    if 'meta-llama/Meta-Llama-3' in llm_choice or 'llama3dot1' in llm_choice:
+    if llm_choice in llama3_models:
         delimiter = '<|start_header_id|>assistant<|end_header_id|>'
     elif 'Question:' in compl_answer:
         delimiter = 'Answer: '
@@ -270,7 +274,7 @@ def produce_answer_uppaal(question, choice, llm_uppaal, llm_answer):
     return prompt, answer
 
 
-def generate_response(question, curr_datetime, model_id, model_factory, model_uppaal, model_answer):
+def generate_response(question, curr_datetime, model_id, model_factory, model_uppaal, model_answer, info_run):
     complete_prompt, answer = produce_answer_interface_llm(question, model_id, model_answer, 'routing')
     print(f'Prompt: {complete_prompt}\n')
     print(f'Answer: {answer}\n')
@@ -288,10 +292,10 @@ def generate_response(question, curr_datetime, model_id, model_factory, model_up
     print('--------------------------------------------------')
 
     log_to_file(f'Query: {complete_prompt}\n\nAnswer: {answer}\n\n##########################\n\n',
-                curr_datetime)
+                curr_datetime, info_run)
 
 
-def live_prompting(choice_llm, model_factory, model_uppaal, model_answer):
+def live_prompting(choice_llm, model_factory, model_uppaal, model_answer, info_run):
     current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     while True:
         query = input('Insert the query you want to ask (type "quit" to exit): ')
@@ -300,7 +304,7 @@ def live_prompting(choice_llm, model_factory, model_uppaal, model_answer):
             print("Exiting the chat.")
             break
 
-        generate_response(query, current_datetime, choice_llm, model_factory, model_uppaal, model_answer)
+        generate_response(query, current_datetime, choice_llm, model_factory, model_uppaal, model_answer, info_run)
         print()
 
 
@@ -309,7 +313,7 @@ def live_prompting(choice_llm, model_factory, model_uppaal, model_answer):
     for question, answer in dict_questions.items():
         eval_oracle.add_prompt_expected_answer_pair(question, answer)
         prompt, answer = produce_answer(question, lang_chain, vect_db, choice, num_chunks)
-        if 'meta-llama/Meta-Llama-3' in choice or 'llama3dot1' in choice:
+        if choice in llama3_models:
             eval_oracle.verify_answer(answer, prompt, True)
         else:
             eval_oracle.verify_answer(answer, prompt)

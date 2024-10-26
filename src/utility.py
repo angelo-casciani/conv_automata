@@ -50,10 +50,14 @@ def load_csv_questions(filename):
         return questions
 
 
-def log_to_file(message, curr_datetime):
+def log_to_file(conversation, curr_datetime, info_run):
     filepath = os.path.join("..", "tests", "outputs", f"output_{curr_datetime}.txt")
     with open(filepath, 'a') as file:
-        file.write(message)
+        file.write('INFORMATION ON THE RUN\n\n')
+        for key in info_run.keys():
+            file.write(f"{key}: {info_run[key]}\n")
+        file.write('\n-----------------------------------\n\n')
+        file.write(conversation)
 
 
 def extract_json(llm_answer):
