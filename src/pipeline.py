@@ -195,7 +195,7 @@ def produce_answer_simulation(question, choice, llm_simpy, llm_answer):
     3. Input (Natural Language Query): What is the next event possible after executing  _load_1, _process_1? 
        Output (LLM answer with Uppaal Query): {"task": "event_prediction", "events_sequence": ["s11", "s12"], "query_nl": "What is the next event possible after executing  _load_1, _process_1?"}
     4. Input (Natural Language Query): What is the cost of executing load_1, process_1, unload_1, load_2?
-       Output (LLM answer with Uppaal Query): {"task": "simulation_cost", "events_sequence": ["s11", "s12", "s13", "s21"], "query_nl": "What is the cost of executing load_1, process_1, unload_1, load_2?"}"""
+       Output (LLM answer with Uppaal Query): {"task": "simulation_with_cost", "events_sequence": ["s11", "s12", "s13", "s21"], "query_nl": "What is the cost of executing load_1, process_1, unload_1, load_2?"}"""
     context = f"The allowed tasks are: simulation, event_prediction, simulation_with_cost.\n\nThe labels for the events are: {automata_data['event_symbols']}"
     complete_answer = llm_simpy.invoke({"question": question,
                                         "context": context,

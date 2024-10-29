@@ -40,7 +40,6 @@ def trigger_simulation_with_cost(events_sequence=None):
     sys.stdout = captured_output
     env = simpy.Environment()
     factory = WeightedFactory(env)
-    results = ''
     if events_sequence:
         env.process(factory.execute_event_sequence(events_sequence))
     else:
@@ -61,7 +60,7 @@ def interface_with_llm(llm_answer):
         factory_output = trigger_simulation(events_sequence)
     elif task == "event_prediction":
         factory_output = trigger_event_prediction(events_sequence)
-    elif task == "simulation_cost":
+    elif task == "simulation_cost" or task == "simulation_with_cost":
         factory_output = trigger_simulation_with_cost(events_sequence)
     
     json_request["results"] = factory_output
