@@ -41,7 +41,13 @@ def main():
     chain_uppaal = initialize_chain(model_id, HF_AUTH, max_new_tokens)
     chain_answer = initialize_chain(model_id, HF_AUTH, max_new_tokens)
 
-    live_prompting(model_id, chain_factory, chain_uppaal, chain_answer)
+    run_data = {
+        'LLM ID': model_id,
+        'Max Generated Tokens LLM': max_new_tokens,
+        'Modality': args.modality
+    }
+
+    live_prompting(model_id, chain_factory, chain_uppaal, chain_answer, run_data)
 
 
 if __name__ == "__main__":
