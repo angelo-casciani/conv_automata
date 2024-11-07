@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 from torch import cuda
 import warnings
 
-# from oracle import AnswerVerificationOracle
 from pipeline import *
 from utility import *
 
@@ -19,7 +18,7 @@ def parse_arguments():
     parser = ArgumentParser(description="Run LLM Generation.")
     parser.add_argument('--llm_id', type=str, default='meta-llama/Meta-Llama-3.1-8B-Instruct', help='LLM model identifier')
     parser.add_argument('--max_new_tokens', type=int, help='Maximum number of tokens to generate', default=512)
-    parser.add_argument('--modality', type=str, default='live')
+    parser.add_argument('--modality', type=str, default='live', help='Modality to use between: evaluation, live')
     args = parser.parse_args()
 
     return args
@@ -44,10 +43,13 @@ def main():
     run_data = {
         'LLM ID': model_id,
         'Max Generated Tokens LLM': max_new_tokens,
-        'Modality': args.modality
+        'Interaction Modality': args.modality
     }
 
-    live_prompting(model_id, chain_factory, chain_uppaal, chain_answer, run_data)
+    if 'evaluation' in args.modality:
+        pass
+    else:
+        live_prompting(model_id, chain_factory, chain_uppaal, chain_answer, run_data)
 
 
 if __name__ == "__main__":
