@@ -1,99 +1,58 @@
-from lego_factory import FactoryAutomata, WeightedFactory
+from lego_factory import FactorySimulator
 from utility import extract_json
-import io
-import simpy
-import sys
 
 
-def trigger_simulation(events_sequence=None):
-    captured_output = io.StringIO()
-    sys.stdout = captured_output
-    env = simpy.Environment()
-    factory = FactoryAutomata(env)
-    results = ''
-    if events_sequence:
-        env.process(factory.execute_event_sequence(events_sequence))
-    else:
-        env.process(factory.run_factory())
-    env.run(until=100)
-    sys.stdout = sys.__stdout__
-    results = captured_output.getvalue()
+def trigger_time_interval_simulation(simulation_time):
+    factory_sim = FactorySimulator(simulation_time)
+    factory_sim.run()
+    results = factory_sim.get_statistics()
     return results
 
 
-def trigger_event_prediction(events_sequence):
-    captured_output = io.StringIO()
-    sys.stdout = captured_output
-    env = simpy.Environment()
-    factory = FactoryAutomata(env)
-    results = ''
-    process = env.process(factory.execute_event_sequence(events_sequence))
-    env.run(until=process)
-    factory.predict_next_event()
-    sys.stdout = sys.__stdout__
-    results = captured_output.getvalue()
+def trigger_batch_production_simulation(target_pieces):
+    factory_sim = FactorySimulator()
+    factory_sim.compute_batch_production_time(target_pieces)
+    results = factory_sim.get_statistics()
     return results
 
 
-def trigger_simulation_with_cost(events_sequence=None):
-    captured_output = io.StringIO()
-    sys.stdout = captured_output
-    env = simpy.Environment()
-    factory = WeightedFactory(env)
-    if events_sequence:
-        env.process(factory.execute_event_sequence(events_sequence))
-    else:
-        env.process(factory.run_factory())
-    env.run(until=100)
-    sys.stdout = sys.__stdout__
-    results = captured_output.getvalue()
-    return results
+def trigger_station_prediction(stations_sequence):
+    factory_sim = FactorySimulator()
+    predicted_station = factory_sim.predict_next_station(stations_sequence)
+    return f"Predicted next station: {predicted_station}"
 
 
 def interface_with_llm(llm_answer):
     json_request = extract_json(llm_answer)
     task = json_request.get("task")
-    events_sequence = json_request.get("events_sequence")
+    simulation_time = json_request.get("simulation_time")
+    target_pieces = json_request.get("target_pieces")
+    stations_sequence = json_request.get("stations_sequence")
     factory_output = ''
 
-    if task == "simulation":
-        factory_output = trigger_simulation(events_sequence)
+    if task == "time_interval":
+        factory_output = trigger_time_interval_simulation(simulation_time)
+    elif task == "batch_production":
+        factory_output = trigger_batch_production_simulation(target_pieces)
     elif task == "event_prediction":
-        factory_output = trigger_event_prediction(events_sequence)
-    elif task == "simulation_cost" or task == "simulation_with_cost":
-        factory_output = trigger_simulation_with_cost(events_sequence)
+        factory_output = trigger_station_prediction(stations_sequence)
     
     json_request["results"] = factory_output
     return json_request
 
 
-    """def main():
-    simulation_output = trigger_simulation(['s11', 's12', 's13', 's21', 's22', 's23'])
-    print(simulation_output)
-    predicted_event = trigger_event_prediction(['s11', 's12', 's13', 's21', 's22', 's23'])
-    print(predicted_event)
-    simulation_output = trigger_simulation_with_cost()
-    print(simulation_output)
-    
-    llm_input = 'Given the user request, this is the JSON to invoke the factory: {"task": "simulation", "events_sequence": ["s11", "s12", "s14"]}'
-    llm_input = 'Given the user request, this is the JSON to invoke the factory: {"task": "simulation", "events_sequence": []}'
+"""def main():
+    llm_input = 'Given the user request, this is the JSON to invoke the factory: {"task": "event_prediction", "simulation_time": "", "target_pieces": "", "stations_sequence": ["Station1", "Station2"]}'
     factory_output = interface_with_llm(llm_input)
-    print(factory_output)
-    
-    llm_input = 'Given the user request, this is the JSON to invoke the factory: {"task": "event_prediction", "events_sequence": ["s11"]}'
-    factory_output = interface_with_llm(llm_input)
-    print(factory_output)
 
-    llm_input = 'Given the user request, this is the JSON to invoke the factory: {"task": "simulation_cost", "events_sequence": ["s11", "s12", "s14"], "results": null}'
+    
+    llm_input = 'Given the user request, this is the JSON to invoke the factory: {"task": "time_interval", "simulation_time": 2000, "target_pieces": "", "stations_sequence": []}'
     factory_output = interface_with_llm(llm_input)
-    print(factory_output)
     
-    
-    TO TEST AGAIN WITH THE UPPAAL INTEGRATION
-    llm_input = 'Given the user request, this is the JSON to invoke the factory: {"task": "verification", "events_sequence": ["s11", "s12", "s13", "s21", "s22", "s23", "s41", "s42", "s43", "s51", "s52", "s53"]}'
+    llm_input = 'Given the user request, this is the JSON to invoke the factory: {"task": "batch_production", "simulation_time": "", "target_pieces": 100, "stations_sequence": []}'
     factory_output = interface_with_llm(llm_input)
-    print(factory_output)
     
+    print(factory_output)
 
 if __name__ == "__main__":
     main()"""

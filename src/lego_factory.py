@@ -1,116 +1,171 @@
-import random
-from utility import retrieve_automata
+import os
+import simpy
+import json
+import numpy as np
 
 
-class FactoryAutomata:
-    def __init__(self, env):
-        self.env = env
-        self.state = '_init_'
-        data = retrieve_automata()
-        self.transitions = data['transitions']
-        self.event_symbols = data['event_symbols']
-        self.event_probabilities = data['event_probabilities']
-        self.failure_states = data['failure_states']
-        self.path = []
+class FactorySimulator:
+    def __init__(self, simulation_time=None, config_file=None):
+        config_file = os.path.join(os.path.dirname(__file__), '..', 'models', 'lego_factory.json')
+        with open(config_file, 'r') as f:
+            self.config = json.load(f)
 
-    def get_state(self):
-        return self.state
+        self.simulation_time = simulation_time
+        self.env = simpy.Environment()
+        self.stations = {}
+        self.stats = {
+            "total_pieces_produced": 0,
+            "waiting_times": {s: [] for s in self.config["stations"]},
+            "processing_times": {s: [] for s in self.config["stations"]},
+            "total_processing_time": [],
+            "total_waiting_time": [],
+            "total_transfer_time": []
+        }
 
-    def get_transitions(self):
-        return self.transitions
+        for station_name, station_data in self.config["stations"].items():
+            self.stations[station_name] = {
+                "resource": simpy.Resource(self.env, capacity=station_data["capacity"]),
+                "processing_time_mean": station_data["processing_time"]["mean"],
+                "processing_time_std": station_data["processing_time"]["std"],
+                "next_stations": station_data["next_stations"]
+            }
 
-    def get_event_symbols(self):
-        return self.event_symbols
 
-    def get_failure_states(self):
-        return self.failure_states
+    def arrival_generator(self):
+        # It simulates the arrival of new pieces to process based on inter-arrival time distribution.
+        while True:
+            inter_arrival_time = max(0, np.random.normal(self.config["inter_arrival_time"]["mean"],
+                                                         self.config["inter_arrival_time"]["std"]))
+            yield self.env.timeout(inter_arrival_time)
+            self.env.process(self.process_piece("Station1"))
 
-    def get_path(self):
-        return self.path
 
-    def trigger(self, event):
-        if event in self.transitions[self.state]:
-            # Simulate a delay for each transition
-            yield self.env.timeout(random.randint(1, 3))
+    def choose_next_station(self, next_stations):
+        # Select the next station based on provided probabilities.
+        if not next_stations:
+            return None  # No next station
 
-            self.state = self.transitions[self.state][event]
-            self.path.append(event)
-            event_label = self.event_symbols[event]
+        stations, probabilities = zip(*[(station, data["probability"]) for station, data in next_stations.items()])
+        return np.random.choice(stations, p=probabilities)
+
+
+    def process_piece(self, station_name):
+        # It processes a piece through the factory stations.
+        while station_name:
+            station = self.stations[station_name]
             
-            print(f"{self.env.now}: Transitioned to {self.state} after event {event}")
+            # Request a slot in the current station's capacity
+            with station["resource"].request() as request:
+                arrival_time = self.env.now
+                yield request  # Wait for resource
+                wait_time = self.env.now - arrival_time
+                self.stats["waiting_times"][station_name].append(wait_time)
+                self.stats["total_waiting_time"].append(wait_time)
 
-            if event_label in self.failure_states:
-                print(f"{self.env.now}: Failure encountered at state {self.state}, Path: {self.path}")
-                yield self.env.process(self.handle_failure())
+                # Processing time at the current station
+                processing_time = max(0, np.random.normal(station["processing_time_mean"],
+                                                        station["processing_time_std"]))
+                yield self.env.timeout(processing_time)
+                self.stats["processing_times"][station_name].append(processing_time)
+                self.stats["total_processing_time"].append(processing_time)
+
+            # Decide the next station based on probabilities
+            next_station = self.choose_next_station(station["next_stations"])
+            if next_station:
+                # Check if there’s a defined transfer time between the stations
+                transfer_data = self.config["transfer_times"].get(station_name, {}).get(next_station)
+                if transfer_data:
+                    transfer_time = max(0, np.random.normal(transfer_data["mean"], transfer_data["std"]))
+                    yield self.env.timeout(transfer_time)
+                    self.stats["total_transfer_time"].append(transfer_time)
+            else:
+                self.stats["total_pieces_produced"] += 1  # Increment the counter when a part completes processing
+                break
+
+            station_name = next_station
+
+
+    def run(self):
+        """Run the simulation for the specified simulation time."""
+        self.env.process(self.arrival_generator())
+        if self.simulation_time is not None:
+            # Run for a fixed time if provided
+            self.env.run(until=self.simulation_time)
         else:
-            print(f"{self.env.now}: Invalid event {event} for state {self.state}")
+            # If no fixed time, stop condition handled in other functions
+            raise ValueError("No simulation time provided. Use compute_batch_production_time for batch runs.")
+
+        
+    def get_statistics(self):
+        """Calculate and return statistics, including the input simulation time."""
+        mean_waiting_times = {s: np.mean(times) for s, times in self.stats["waiting_times"].items()}
+        mean_processing_times = {s: np.mean(times) for s, times in self.stats["processing_times"].items()}
+        total_mean_waiting_time = np.mean(self.stats["total_waiting_time"])
+        total_mean_processing_time = np.mean(self.stats["total_processing_time"])
+        total_mean_transfer_time = np.mean(self.stats["total_transfer_time"])
+
+        return {
+            "total_pieces_produced": self.stats["total_pieces_produced"],
+            "mean_waiting_times": mean_waiting_times,
+            "mean_processing_times": mean_processing_times,
+            "total_mean_waiting_time": total_mean_waiting_time,
+            "total_mean_processing_time": total_mean_processing_time,
+            "total_mean_transfer_time": total_mean_transfer_time,
+            "simulation_time": self.simulation_time
+        }
 
 
-    def handle_failure(self):
-        # Simulate repair time for failure
-        repair_duration = random.randint(5, 15)
-        print(f"{self.env.now}: Repairing failure, this will take {repair_duration} units of time.")
-        yield self.env.timeout(repair_duration)
-        print(f"{self.env.now}: Repair completed. Resuming operations.")
+    def predict_next_station(self, station_sequence):
+        """
+        Predicts the next station given a sequence of stations.
+        
+        Args:
+            station_sequence (list): A list of station names representing the sequence of stations visited.
 
-    def run_factory(self):
-        # Simulate the execution until completion (q_12)
-        while self.state != 'q_12':
-            next_event = self.predict_next_event()
-            yield self.env.process(self.trigger(next_event))
-            yield self.env.timeout(random.randint(1, 3))
-
-    def predict_next_event(self):
-        # Predict the next event based on the current state's probabilities.
-        possible_events = list(self.transitions[self.state].keys())
-        #return random.choice(possible_events)
-        probabilities = [self.event_probabilities[self.state][event] for event in possible_events]
-        next_event = random.choices(possible_events, weights=probabilities, k=1)[0]
-        print(f"{self.env.now}: Predicted next event to execute: {next_event}")
-        return next_event
-
-    def execute_event_sequence(self, event_sequence):
-        # Simulate the execution of a specified sequence of events.
-        for event in event_sequence:
-            yield self.env.process(self.trigger(event))
-            yield self.env.timeout(random.randint(1, 3))
+        Returns:
+            str or None: The predicted next station, or None if there is no outgoing connection.
+        """
+        if not station_sequence:
+            return None  # No prediction possible if the sequence is empty
+        
+        last_station = station_sequence[-1]
+        next_stations = self.stations[last_station]["next_stations"]
+        
+        if not next_stations:
+            return None  # No next station if it’s the end of the line for the part
+        
+        # Extract stations and their probabilities
+        stations, probabilities = zip(*[(station, data["probability"]) for station, data in next_stations.items()])
+        
+        # Predict the next station based on probabilities
+        predicted_next_station = np.random.choice(stations, p=probabilities)
+        return predicted_next_station
 
 
-class WeightedFactory(FactoryAutomata):
-    def __init__(self, env):
-        super().__init__(env)
-        self.cost = 0
+    def compute_batch_production_time(self, target_pieces):
+        # Computes the time needed to produce a specified number of pieces incrementally.
+        self.env.process(self.arrival_generator())
+        while self.stats["total_pieces_produced"] < target_pieces:
+            self.env.run(until=self.env.now + 1)  # Run for small intervals (1 time unit)
+        self.simulation_time = self.env.now
+        
 
-    def get_cost(self):
-        return self.cost
+"""# Production in an interval
+simulation_time = 1000  # Simulation time in arbitrary units
+factory_sim = FactorySimulator(simulation_time)
+factory_sim.run()
+results = factory_sim.get_statistics()
+print(results)
 
-    def trigger(self, event):
-        transition_cost = self.get_transition_cost(event)
-        self.cost += transition_cost
-        yield from super().trigger(event)
-        print(f"{self.env.now}: Total execution cost after event {event}: {self.cost}")
+# Next station prediction
+factory_sim = FactorySimulator()
+sequence = ["Station1", "Station2"]
+predicted_station = factory_sim.predict_next_station(sequence)
+print("Predicted next station:", predicted_station)
 
-    def get_transition_cost(self, event):
-        data = retrieve_automata()
-        cost_mapping = data['cost_mapping']
-        return cost_mapping.get(event, 0)
-
-
-"""def main():
-    print('Simulate factory and trigger a failure.')
-    env = simpy.Environment()
-    #factory = FactoryAutomata(env)
-    factory = WeightedFactory(env)
-    event_sequence = ['s11', 's12', 's13', 's21', 's22', 's23']
-
-    # Run the factory simulation process
-    #env.process(factory.run_factory())
-    env.process(factory.execute_event_sequence(event_sequence))
-    env.run(until=100)
-
-    print('Next event prediction')
-    print(factory.predict_next_event())
-    print('\n')
-
-if __name__ == "__main__":
-    main()"""
+# Batch production time computation
+factory_sim = FactorySimulator()
+target_pieces = 100
+batch_time = factory_sim.compute_batch_production_time(target_pieces)
+print(f"Time needed to produce {target_pieces} pieces: {batch_time}")
+"""

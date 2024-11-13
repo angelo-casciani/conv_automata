@@ -10,7 +10,7 @@ from torch import bfloat16
 import llm_factory_interface as factory_interface
 from oracle import AnswerVerificationOracle
 import uppaal_interface
-from utility import log_to_file, retrieve_automata
+from utility import log_to_file, retrieve_automata, retrieve_factory
 
 
 llama3_models = ['meta-llama/Meta-Llama-3-8B-Instruct', 'meta-llama/Meta-Llama-3.1-8B-Instruct',
@@ -149,9 +149,10 @@ def produce_answer_simulation(question, choice, llm_simpy, llm_answer):
     path_prompts = os.path.join(os.path.dirname(__file__), 'prompts.json')
     with open(path_prompts, 'r') as prompt_file:
         prompts = json.load(prompt_file)
-    automata_data = retrieve_automata()
+    factory_data = retrieve_factory()
+    station_names = ', '.join([station for station in factory_data['stations']])
     sys_mess = prompts.get('system_message_simulation', '') + prompts.get('shots_simulation_lego', '')
-    context = prompts.get('context_simulation', '').replace('LABELS', automata_data['event_symbols'])
+    context = prompts.get('context_simulation', '').replace('LABELS', station_names)
     complete_answer = llm_simpy.invoke({"question": question,
                                         "context": context,
                                         "system_message": sys_mess})
@@ -160,7 +161,7 @@ def produce_answer_simulation(question, choice, llm_simpy, llm_answer):
     print(complete_answer)
     results = factory_interface.interface_with_llm(answer)
     sys_mess = prompts.get('system_message_results', '')
-    context = f"The labels for the events are: {automata_data['event_symbols']}\nResults from the automaton: {results}"
+    context = f"The labels for the stations are: {station_names}\nResults from the simulation: {results}"
     complete_answer = llm_answer.invoke({"question": question,
                                          "context": context,
                                          "system_message": sys_mess})

@@ -71,3 +71,11 @@ def retrieve_automata():
         data = json.load(file)
     
     return data
+
+
+def retrieve_factory():
+    model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'lego_factory.json')
+    with open(model_path, 'r') as file:
+        data = json.load(file)
+    
+    return data

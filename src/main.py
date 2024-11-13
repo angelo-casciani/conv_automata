@@ -25,12 +25,11 @@ def parse_arguments():
 
 
 def main():
-    print("""Welcome! The tasks that are possible on the LEGO Factory automata are:
-          - Simulation of the whole production process (SimPy);
-          - Simulation with specified sequence of events (SimPy);
-          - Event Prediction (SimPy);
-          - Simulation with cost analysis (SimPy);
-          - Verification of temporal properties (Uppaal).\n""")
+    print("""Welcome! The tasks that are possible on the LEGO Factory are:
+          - Simulation of the production in a specified time interval (SimPy);
+          - Simulation of the production of a specied number of pieces (SimPy);
+          - Next Event Prediction (SimPy);
+          - Verification of temporal properties on the automaton representing the factory (Uppaal).\n""")
 
     args = parse_arguments()
 
