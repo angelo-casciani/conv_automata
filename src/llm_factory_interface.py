@@ -30,9 +30,9 @@ def interface_with_llm(llm_answer):
     stations_sequence = json_request.get("stations_sequence")
     factory_output = ''
 
-    if task == "time_interval":
+    if task == "sim_with_time":
         factory_output = trigger_time_interval_simulation(simulation_time)
-    elif task == "batch_production":
+    elif task == "sim_with_number_products":
         factory_output = trigger_batch_production_simulation(target_pieces)
     elif task == "event_prediction":
         factory_output = trigger_station_prediction(stations_sequence)
