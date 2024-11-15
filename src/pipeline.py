@@ -129,7 +129,7 @@ def produce_answer_interface_llm(question, model_id, llm_chain, answer_phase):
     if answer_phase == 'routing':
         automata_data = retrieve_automata()
         sys_mess = prompts.get('system_message_routing', '')
-        context = prompts.get('context_routing', '').replace('EVENT_SYMBOLS', automata_data['event_symbols']).replace('TRANSITIONS', list(automata_data['transitions'].keys()))
+        context = prompts.get('context_routing', '')
         complete_answer = llm_chain.invoke({"question": question,
                                             "context": context,
                                             "system_message": sys_mess})
@@ -160,7 +160,7 @@ def produce_answer_simulation(question, choice, llm_simpy, llm_answer):
 
     print(complete_answer)
     results = factory_interface.interface_with_llm(answer)
-    sys_mess = prompts.get('system_message_results', '')
+    sys_mess = prompts.get('system_message_results_sim', '')
     context = f"The labels for the stations are: {station_names}\nResults from the simulation: {results}"
     complete_answer = llm_answer.invoke({"question": question,
                                          "context": context,

@@ -30,7 +30,6 @@ class FactorySimulator:
                 "next_stations": station_data["next_stations"]
             }
 
-
     def arrival_generator(self):
         # It simulates the arrival of new pieces to process based on inter-arrival time distribution.
         while True:
@@ -38,7 +37,6 @@ class FactorySimulator:
                                                          self.config["inter_arrival_time"]["std"]))
             yield self.env.timeout(inter_arrival_time)
             self.env.process(self.process_piece("Station1"))
-
 
     def choose_next_station(self, next_stations):
         # Select the next station based on provided probabilities.
@@ -48,12 +46,11 @@ class FactorySimulator:
         stations, probabilities = zip(*[(station, data["probability"]) for station, data in next_stations.items()])
         return np.random.choice(stations, p=probabilities)
 
-
     def process_piece(self, station_name):
         # It processes a piece through the factory stations.
         while station_name:
             station = self.stations[station_name]
-            
+
             # Request a slot in the current station's capacity
             with station["resource"].request() as request:
                 arrival_time = self.env.now
@@ -64,7 +61,7 @@ class FactorySimulator:
 
                 # Processing time at the current station
                 processing_time = max(0, np.random.normal(station["processing_time_mean"],
-                                                        station["processing_time_std"]))
+                                                          station["processing_time_std"]))
                 yield self.env.timeout(processing_time)
                 self.stats["processing_times"][station_name].append(processing_time)
                 self.stats["total_processing_time"].append(processing_time)
@@ -84,7 +81,6 @@ class FactorySimulator:
 
             station_name = next_station
 
-
     def run(self):
         """Run the simulation for the specified simulation time."""
         self.env.process(self.arrival_generator())
@@ -95,7 +91,6 @@ class FactorySimulator:
             # If no fixed time, stop condition handled in other functions
             raise ValueError("No simulation time provided. Use compute_batch_production_time for batch runs.")
 
-        
     def get_statistics(self):
         """Calculate and return statistics, including the input simulation time."""
         mean_waiting_times = {s: np.mean(times) for s, times in self.stats["waiting_times"].items()}
@@ -111,9 +106,8 @@ class FactorySimulator:
             "total_mean_waiting_time": total_mean_waiting_time,
             "total_mean_processing_time": total_mean_processing_time,
             "total_mean_transfer_time": total_mean_transfer_time,
-            "simulation_time": self.simulation_time
+            "total_execution_time": self.simulation_time
         }
-
 
     def predict_next_station(self, station_sequence):
         """
@@ -127,20 +121,19 @@ class FactorySimulator:
         """
         if not station_sequence:
             return None  # No prediction possible if the sequence is empty
-        
+
         last_station = station_sequence[-1]
         next_stations = self.stations[last_station]["next_stations"]
-        
+
         if not next_stations:
             return None  # No next station if it’s the end of the line for the part
-        
+
         # Extract stations and their probabilities
         stations, probabilities = zip(*[(station, data["probability"]) for station, data in next_stations.items()])
-        
+
         # Predict the next station based on probabilities
         predicted_next_station = np.random.choice(stations, p=probabilities)
         return predicted_next_station
-
 
     def compute_batch_production_time(self, target_pieces):
         # Computes the time needed to produce a specified number of pieces incrementally.
@@ -148,7 +141,7 @@ class FactorySimulator:
         while self.stats["total_pieces_produced"] < target_pieces:
             self.env.run(until=self.env.now + 1)  # Run for small intervals (1 time unit)
         self.simulation_time = self.env.now
-        
+
 
 """# Production in an interval
 simulation_time = 1000  # Simulation time in arbitrary units
