@@ -18,7 +18,7 @@ def parse_arguments():
     parser = ArgumentParser(description="Run LLM Generation.")
     parser.add_argument('--llm_id', type=str, default='meta-llama/Meta-Llama-3.1-8B-Instruct', help='LLM model identifier')
     parser.add_argument('--max_new_tokens', type=int, help='Maximum number of tokens to generate', default=512)
-    parser.add_argument('--modality', type=str, default='live', help='Modality to use between: evaluation, live')
+    parser.add_argument('--modality', type=str, default='evaluation-simulation', help='Modality to use between: evaluation-simulation, evaluation-verification, evaluation-routing, evaluation-answer, live')
     args = parser.parse_args()
 
     return args
@@ -45,8 +45,8 @@ def main():
         'Interaction Modality': args.modality
     }
 
-    if 'evaluation' in args.modality:
-        pass
+    if 'evaluation-simulation' in args.modality:
+        evaluate_performance(model_id, chain_factory, chain_answer, 'simulation.csv', run_data)
     else:
         live_prompting(model_id, chain_factory, chain_uppaal, chain_answer, run_data)
 

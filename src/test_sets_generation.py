@@ -76,7 +76,7 @@ def generate_simulation_samples(filename, samples):
         writer = csv.writer(file)
         writer.writerow(["question", "answer", "evaluation_type"])
         for question, answer in samples:
-            writer.writerow([question, answer.replace("'", '"'), "simulation"])
+            writer.writerow([question, answer.replace("'", '"').replace("{", '').replace("}", ''), "simulation"])
     print(f"Generated {len(samples)} samples and saved to {output_path}")
 
 

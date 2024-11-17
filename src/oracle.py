@@ -10,26 +10,26 @@ class AnswerVerificationOracle:
         self.run_info = info_run
 
     def add_question_expected_answer_pair(self, question, expected_answer):
-        self.prefix_with_expected_answer_pairs[question] = expected_answer
+        self.question_with_expected_answer_pairs[question] = expected_answer
 
     """ Verifying the answer correctness.
 
     This method checks whether the model's answer matches the expected answer for a given prompt.
     """
 
-    def verify_answer(self, prompt, prefix, model_answer):
+    def verify_answer(self, prompt, question, model_answer):
         result = {
             'prompt': prompt,
-            'question': prefix,
+            'question': question,
             'model_answer': model_answer,
             'expected_answer': None,
             'verification_result': None
         }
-        expected_answer = self.prefix_with_expected_answer_pairs.get(prefix)
+        expected_answer = self.question_with_expected_answer_pairs.get(question)
         if expected_answer is not None:
             result['expected_answer'] = expected_answer
             result['verification_result'] = expected_answer.lower() in model_answer.lower()
-            print(f"Answer: {model_answer}\nResult: {result['verification_result']}")
+            print(f"Answer: {model_answer}\nExpected_answer: {result['expected_answer']}\nResult: {result['verification_result']}")
         self.results.append(result)
 
         return result['verification_result']

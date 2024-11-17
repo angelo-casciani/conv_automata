@@ -230,12 +230,15 @@ def live_prompting(choice_llm, model_factory, model_uppaal, model_answer, info_r
 
 
 def evaluate_performance(choice_llm, lang_chain, llm_answer, test_filename, info_run):
-    dict_questions = load_csv_questions(test_filename)
+    questions = load_csv_questions(test_filename)
     oracle = AnswerVerificationOracle(info_run)
     count = 0
-    for question, expected_answer in dict_questions.items():
-        oracle.add_question_expected_answer_pair(question, expected_answer[0])
-        print(f'Expected answer: {expected_answer[0]}\n')
+    prompt, answer = '', ''
+    for el in questions:
+        question = el[0]
+        expected_answer = el[1].replace(' ', '')
+        test_type = el[2]
+        oracle.add_question_expected_answer_pair(question, expected_answer)
         if test_filename == 'simulation.csv':
             prompt, answer = produce_answer_simulation(question, choice_llm, lang_chain, None)
         elif test_filename == 'verification.csv':
@@ -243,14 +246,13 @@ def evaluate_performance(choice_llm, lang_chain, llm_answer, test_filename, info
         elif test_filename == 'routing.csv':
             prompt, answer = produce_answer_interface_llm(question, choice_llm, lang_chain, 'routing')
         elif test_filename == 'answer.csv':
-            if expected_answer[1] == 'simulation':
+            if test_type == 'simulation':
                 prompt, answer = produce_answer_simulation(question, choice_llm, lang_chain, llm_answer)
-            elif expected_answer[1] == 'verification':
+            elif test_type == 'verification':
                 prompt, answer = produce_answer_uppaal(question, choice_llm, lang_chain, llm_answer)
-        print(f'Prompt: {prompt}\n')
-        oracle.verify_answer(prompt, question, answer)
+        oracle.verify_answer(prompt, question, answer.replace('\n', ' ').replace(' ', ''))
         count += 1
-        print(f'Processing answer for question {count} of {len(dict_questions)}...')
+        print(f'Processing answer for question {count} of {len(questions)}...')
 
     print('Validation process completed. Check the output file.')
     oracle.write_results_to_file()

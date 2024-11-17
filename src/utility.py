@@ -32,14 +32,14 @@ def str2bool(v):
 
 
 def load_csv_questions(filename):
-    filepath = os.path.join(os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', filename))
-    questions = {}
+    filepath = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', filename)
+    questions = []
     with open(filepath, newline='') as csvfile:
         reader = csv.reader(csvfile)
         next(reader)
         for row in reader:
-            question, answer, type = row
-            questions[question] = [answer, type]
+            question, answer, test_type = row
+            questions.append([question, answer, test_type])
         return questions
 
 
