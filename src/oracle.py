@@ -9,8 +9,8 @@ class AnswerVerificationOracle:
         self.results = []
         self.run_info = info_run
 
-    def add_prefix_with_expected_answer_pair(self, prefix, expected_answer):
-        self.prefix_with_expected_answer_pairs[prefix] = expected_answer
+    def add_question_expected_answer_pair(self, question, expected_answer):
+        self.prefix_with_expected_answer_pairs[question] = expected_answer
 
     """ Verifying the answer correctness.
 

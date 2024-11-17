@@ -10,7 +10,7 @@ from torch import bfloat16
 import llm_factory_interface as factory_interface
 from oracle import AnswerVerificationOracle
 import uppaal_interface
-from utility import log_to_file, retrieve_automata, retrieve_factory
+from utility import log_to_file, retrieve_automata, retrieve_factory, load_csv_questions
 
 
 llama3_models = ['meta-llama/Meta-Llama-3-8B-Instruct', 'meta-llama/Meta-Llama-3.1-8B-Instruct',
@@ -156,15 +156,16 @@ def produce_answer_simulation(question, choice, llm_simpy, llm_answer):
                                         "context": context,
                                         "system_message": sys_mess})
     prompt, answer = parse_llm_answer(complete_answer, choice)
-
     print(complete_answer)
-    results = factory_interface.interface_with_llm(answer)
-    sys_mess = prompts.get('system_message_results_sim', '')
-    context = f"The labels for the stations are: {station_names}\nResults from the simulation: {results}"
-    complete_answer = llm_answer.invoke({"question": question,
-                                         "context": context,
-                                         "system_message": sys_mess})
-    prompt, answer = parse_llm_answer(complete_answer, choice)
+
+    if llm_answer is not None:
+        results = factory_interface.interface_with_llm(answer)
+        sys_mess = prompts.get('system_message_results_sim', '')
+        context = f"The labels for the stations are: {station_names}\nResults from the simulation: {results}"
+        complete_answer = llm_answer.invoke({"question": question,
+                                            "context": context,
+                                            "system_message": sys_mess})
+        prompt, answer = parse_llm_answer(complete_answer, choice)
 
     return prompt, answer
 
@@ -180,15 +181,16 @@ def produce_answer_uppaal(question, choice, llm_uppaal, llm_answer):
                                          "context": context,
                                          "system_message": sys_mess})
     prompt, answer = parse_llm_answer(complete_answer, choice)
-
     print(complete_answer)
-    results = uppaal_interface.interface_with_llm(answer)
-    sys_mess = prompts.get('system_message_results', '')
-    context = f'Results from Uppaal: {results}'
-    complete_answer = llm_answer.invoke({"question": question,
-                                         "context": context,
-                                         "system_message": sys_mess})
-    prompt, answer = parse_llm_answer(complete_answer, choice)
+
+    if llm_answer is not None:
+        results = uppaal_interface.interface_with_llm(answer)
+        sys_mess = prompts.get('system_message_results', '')
+        context = f'Results from Uppaal: {results}'
+        complete_answer = llm_answer.invoke({"question": question,
+                                            "context": context,
+                                            "system_message": sys_mess})
+        prompt, answer = parse_llm_answer(complete_answer, choice)
 
     return prompt, answer
 
@@ -227,16 +229,28 @@ def live_prompting(choice_llm, model_factory, model_uppaal, model_answer, info_r
         print()
 
 
-"""def evaluate_rag_pipeline(choice_llm, lang_chain, vect_db, num_chunks, dict_questions, info_run):
+def evaluate_performance(choice_llm, lang_chain, llm_answer, test_filename, info_run):
+    dict_questions = load_csv_questions(test_filename)
     oracle = AnswerVerificationOracle(info_run)
     count = 0
-    for prefix, expected_prediction in dict_questions.items():
-        oracle.add_prefix_with_expected_answer_pair(prefix, expected_prediction)
-        prompt, answer = produce_answer(prefix, choice_llm, lang_chain, vect_db, num_chunks, info_run)
+    for question, expected_answer in dict_questions.items():
+        oracle.add_question_expected_answer_pair(question, expected_answer[0])
+        print(f'Expected answer: {expected_answer[0]}\n')
+        if test_filename == 'simulation.csv':
+            prompt, answer = produce_answer_simulation(question, choice_llm, lang_chain, None)
+        elif test_filename == 'verification.csv':
+            prompt, answer = produce_answer_uppaal(question, choice_llm, lang_chain, None)
+        elif test_filename == 'routing.csv':
+            prompt, answer = produce_answer_interface_llm(question, choice_llm, lang_chain, 'routing')
+        elif test_filename == 'answer.csv':
+            if expected_answer[1] == 'simulation':
+                prompt, answer = produce_answer_simulation(question, choice_llm, lang_chain, llm_answer)
+            elif expected_answer[1] == 'verification':
+                prompt, answer = produce_answer_uppaal(question, choice_llm, lang_chain, llm_answer)
         print(f'Prompt: {prompt}\n')
-        oracle.verify_answer(prompt, prefix, answer)
+        oracle.verify_answer(prompt, question, answer)
         count += 1
-        print(f'Processing prediction for prefix {count} of {len(dict_questions)}...')
+        print(f'Processing answer for question {count} of {len(dict_questions)}...')
 
     print('Validation process completed. Check the output file.')
-    oracle.write_results_to_file()"""
+    oracle.write_results_to_file()
