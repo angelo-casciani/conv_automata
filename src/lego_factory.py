@@ -113,14 +113,10 @@ class FactorySimulator:
         # Predicts the next station given a sequence of stations.
         if not station_sequence:
             return None  # No prediction possible if the sequence is empty
-
         last_station = station_sequence[-1]
         next_stations = self.stations[last_station]["next_stations"]
-
         if not next_stations:
-            return None  # No next station if it’s the end of the line for the part
-
-        # Extract stations and their probabilities
+            return None
         stations, probabilities = zip(*[(station, data["probability"]) for station, data in next_stations.items()])
 
         # Predict the next station based on probabilities
@@ -131,26 +127,5 @@ class FactorySimulator:
         # Computes the time needed to produce a specified number of pieces incrementally.
         self.env.process(self.arrival_generator())
         while self.stats["total_pieces_produced"] < target_pieces:
-            self.env.run(until=self.env.now + 1)  # Run for small intervals (1 time unit)
+            self.env.run(until=self.env.now + 1)
         self.simulation_time = self.env.now
-
-
-"""# Production in an interval
-simulation_time = 1000  # Simulation time in arbitrary units
-factory_sim = FactorySimulator(simulation_time)
-factory_sim.run()
-results = factory_sim.get_statistics()
-print(results)
-
-# Next station prediction
-factory_sim = FactorySimulator()
-sequence = ["Station1", "Station2"]
-predicted_station = factory_sim.predict_next_station(sequence)
-print("Predicted next station:", predicted_station)
-
-# Batch production time computation
-factory_sim = FactorySimulator()
-target_pieces = 100
-batch_time = factory_sim.compute_batch_production_time(target_pieces)
-print(f"Time needed to produce {target_pieces} pieces: {batch_time}")
-"""

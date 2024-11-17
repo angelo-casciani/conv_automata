@@ -26,8 +26,8 @@ def parse_arguments():
 
 def main():
     print("""Welcome! The tasks that are possible on the LEGO Factory are:
-          - Simulation of the production in a specified time interval (SimPy);
-          - Simulation of the production of a specied number of pieces (SimPy);
+          - Discrete simulation of the production in a specified time interval in units of time (SimPy);
+          - Discrete simulation of the production of a specified number of pieces (SimPy);
           - Next Event Prediction (SimPy);
           - Verification of temporal properties on the automaton representing the factory (Uppaal).\n""")
 
