@@ -127,7 +127,6 @@ def produce_answer_interface_llm(question, model_id, llm_chain, answer_phase):
         prompts = json.load(prompt_file)
     prompt, answer = ('', '')
     if answer_phase == 'routing':
-        automata_data = retrieve_automata()
         sys_mess = prompts.get('system_message_routing', '')
         context = prompts.get('context_routing', '')
         complete_answer = llm_chain.invoke({"question": question,
@@ -151,7 +150,7 @@ def produce_answer_simulation(question, choice, llm_simpy, llm_answer):
         prompts = json.load(prompt_file)
     factory_data = retrieve_factory()
     station_names = ', '.join([station for station in factory_data['stations']])
-    sys_mess = prompts.get('system_message_simulation', '') + prompts.get('shots_simulation_lego', '')
+    sys_mess = prompts.get('system_message_simulation', '') + prompts.get('shots_simulation', '')
     context = prompts.get('context_simulation', '').replace('LABELS', station_names)
     complete_answer = llm_simpy.invoke({"question": question,
                                         "context": context,
@@ -175,7 +174,7 @@ def produce_answer_uppaal(question, choice, llm_uppaal, llm_answer):
     with open(path_prompts, 'r') as prompt_file:
         prompts = json.load(prompt_file)
     automata_data = retrieve_automata()
-    sys_mess = prompts.get('system_message_verification', '') + prompts.get('shots_verification_lego', '')
+    sys_mess = prompts.get('system_message_verification', '') + prompts.get('shots_verification', '')
     context = prompts.get('context_verification', '').replace('STATES', list(automata_data['transitions'].keys()))
     complete_answer = llm_uppaal.invoke({"question": question,
                                          "context": context,

@@ -110,15 +110,7 @@ class FactorySimulator:
         }
 
     def predict_next_station(self, station_sequence):
-        """
-        Predicts the next station given a sequence of stations.
-        
-        Args:
-            station_sequence (list): A list of station names representing the sequence of stations visited.
-
-        Returns:
-            str or None: The predicted next station, or None if there is no outgoing connection.
-        """
+        # Predicts the next station given a sequence of stations.
         if not station_sequence:
             return None  # No prediction possible if the sequence is empty
 
