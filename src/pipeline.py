@@ -15,6 +15,9 @@ from utility import log_to_file, retrieve_automata, retrieve_factory, load_csv_q
 
 llama3_models = ['meta-llama/Meta-Llama-3-8B-Instruct', 'meta-llama/Meta-Llama-3.1-8B-Instruct',
                  'meta-llama/Llama-3.2-1B-Instruct', 'meta-llama/Llama-3.2-3B-Instruct']
+mistral_models = ['mistralai/Mistral-7B-Instruct-v0.2',  'mistralai/Mistral-7B-Instruct-v0.3',
+                  'mistralai/Mistral-Nemo-Instruct-2407', 'mistralai/Ministral-8B-Instruct-2410']
+qwen_models = ['Qwen/Qwen2.5-7B-Instruct']
 
 
 def initialize_pipeline(model_identifier, hf_token, max_new_tokens):
@@ -89,10 +92,13 @@ def generate_prompt_template(model_id):
 
     if model_id in llama3_models:
         template = prompts.get('template-llama_instruct', '')
-        prompt = PromptTemplate.from_template(template)
+    elif model_id in mistral_models:
+        template = prompts.get('template-mistral', '')
+    elif model_id in qwen_models:
+        template = prompts.get('template-qwen', '')
     else:
         template = prompts.get('template-generic', '')
-        prompt = PromptTemplate.from_template(template)
+    prompt = PromptTemplate.from_template(template)
 
     return prompt
 
