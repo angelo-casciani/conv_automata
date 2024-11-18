@@ -47,6 +47,12 @@ def main():
 
     if 'evaluation-simulation' in args.modality:
         evaluate_performance(model_id, chain_factory, chain_answer, 'simulation.csv', run_data)
+    elif 'evaluation-verification' in args.modality:
+        evaluate_performance(model_id, chain_uppaal, chain_answer, 'verification.csv', run_data)
+    elif 'evaluation-routing' in args.modality:
+        evaluate_performance(model_id, chain_factory, chain_answer, 'routing.csv', run_data)
+    elif 'evaluation-answer' in args.modality:
+        evaluate_performance(model_id, chain_factory, chain_answer, 'answer.csv', run_data)
     else:
         live_prompting(model_id, chain_factory, chain_uppaal, chain_answer, run_data)
 
