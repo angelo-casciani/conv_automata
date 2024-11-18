@@ -72,6 +72,36 @@ def initialize_pipeline(model_identifier, hf_token, max_new_tokens):
             max_new_tokens=max_new_tokens,
             repetition_penalty=1.1
         )
+    elif model_identifier in mistral_models:
+        terminators = [
+            tokenizer.eos_token_id,
+            tokenizer.convert_tokens_to_ids("[/INST]]")
+        ]
+        generate_text = pipeline(
+            model=model, tokenizer=tokenizer,
+            return_full_text=True,
+            task='text-generation',
+            eos_token_id=terminators,
+            pad_token_id=tokenizer.eos_token_id,
+            do_sample=True,
+            max_new_tokens=max_new_tokens,
+            repetition_penalty=1.1
+        )
+    elif model_identifier in qwen_models:
+        terminators = [
+            tokenizer.eos_token_id,
+            tokenizer.convert_tokens_to_ids("<|im_end|>")
+        ]
+        generate_text = pipeline(
+            model=model, tokenizer=tokenizer,
+            return_full_text=True,
+            task='text-generation',
+            eos_token_id=terminators,
+            pad_token_id=tokenizer.eos_token_id,
+            do_sample=True,
+            max_new_tokens=max_new_tokens,
+            repetition_penalty=1.1
+        )
     else:
         generate_text = pipeline(
             model=model, tokenizer=tokenizer,
@@ -250,7 +280,7 @@ def evaluate_performance(choice_llm, lang_chain, llm_answer, test_filename, info
         elif test_filename == 'verification.csv':
             prompt, answer = produce_answer_uppaal(question, choice_llm, lang_chain, None)
         elif test_filename == 'routing.csv':
-            prompt, answer = produce_answer_interface_llm(question, choice_llm, lang_chain, 'routing')
+            prompt, answer = produce_answer_interface_llm(question, choice_llm, llm_answer, 'routing')
         elif test_filename == 'answer.csv':
             if test_type == 'simulation':
                 prompt, answer = produce_answer_simulation(question, choice_llm, lang_chain, llm_answer)
