@@ -1,5 +1,6 @@
 import csv
 import os
+import pandas as pd
 import random
 
 
@@ -49,7 +50,7 @@ simulation_tasks = {
 }
 
 
-time_range = range(200, 5001, 500)
+time_range_sim = range(200, 5001, 500)
 pieces_range = range(50, 501, 50)
 stations = ["Station1", "Station2", "Station3", "Station4", "Station5"]
 tasks_proportions = [0.4, 0.4, 0.2]
@@ -70,17 +71,17 @@ def generate_stats_file(filename, samples):
     print(f"Generated statistics and saved to {stats_output_path}")
 
 
-def generate_simulation_samples(filename, samples):
+def write_samples_to_csv(filename, samples):
     output_path = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', f'{filename}.csv')
     with open(output_path, mode="w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
         writer.writerow(["question", "answer", "evaluation_type"])
         for question, answer in samples:
-            writer.writerow([question, answer.replace("'", '"').replace("{", '').replace("}", ''), "simulation"])
+            writer.writerow([question, answer.replace("'", '"').replace("{", '').replace("}", ''), filename])
     print(f"Generated {len(samples)} samples and saved to {output_path}")
 
 
-def main():
+def main_simulation():
     samples = []
     for _ in range(300):
         task = random.choices(
@@ -90,7 +91,7 @@ def main():
         template, answer_template = random.choice(simulation_tasks[task])
         
         if task == "sim_with_time":
-            time_value = random.choice(time_range)
+            time_value = random.choice(time_range_sim)
             if "{station}" in template:
                 station_value = random.choice(stations)
                 question = template.format(station=station_value, time=time_value)
@@ -115,17 +116,100 @@ def main():
             answer["stations_sequence"] = sequence.split(", ")        
         samples.append((question, str(answer)))
 
-    generate_simulation_samples('simulation', samples)
+    write_samples_to_csv('simulation', samples)
     generate_stats_file('simulation', samples)
 
 
+states_verification = ["q_0", "q_1", "q_2", "q_3", "q_4", "q_5", "q_6", "q_7", "q_8", "q_9", "q_10", "q_11", "q_12", "q_13", "q_14"]
+queries_verification = [
+    ("Does the system will always eventually reach state {state}.", 
+     "A<> s.{state}"),
+    ("Does a path where state {state} is reached exist?",
+     "E<> s.{state}"),
+    ("Verify if the automaton can always stay in state {state} for up to {time} time units.", 
+     "A[] s.{state} && s.x <= {time}"),
+    ("Does a path where the system stays in state {state} forever exist?", 
+     "E[] s.{state}"),
+    ("Check if state {state} is reachable within {time} time units.", 
+     "E<> s.{state} && s.x <= {time}"),
+    ("If the system reaches {state1}, will it eventually be in {state2}?", 
+     "s.{state1} --> s.{state2}"),
+    ("Verify if the automaton reaches the states {state1} and {state2}.",
+     "E<> (s.{state1} && s.{state2})")
+]
+time_range_verification = range(10, 51, 5)
+
+
+def main_verification():
+    samples = []
+    for _ in range(300):
+        query_template, uppaal_query_template = random.choice(queries_verification)
+        state = random.choice(states_verification)
+        state1 = random.choice(states_verification)
+        state2 = random.choice(states_verification)
+        while state1 == state2:
+            state2 = random.choice(states_verification)
+        time = random.choice(time_range_verification)
+
+        question = query_template.format(state=state, state1=state1, state2=state2, time=time)
+        uppaal_query = uppaal_query_template.format(
+            state=f"s.{state}",
+            state1=f"s.{state1}",
+            state2=f"s.{state2}",
+            time=time
+        )
+
+        samples.append((
+            question, 
+            str({"task": "verification", "query_nl": question, "uppaal_query": uppaal_query})
+        ))
+
+    write_samples_to_csv('verification', samples)
+
+
+def main_routing(simulation_csv, verification_csv, output_csv, sim_proportions, total_samples=300):
+    sim_df = pd.read_csv(simulation_csv)
+    ver_df = pd.read_csv(verification_csv)
+    
+    sim_samples_count = total_samples // 2
+    ver_samples_count = total_samples - sim_samples_count
+    
+    sim_with_time_count = int(sim_samples_count * sim_proportions[0])
+    sim_with_number_products_count = int(sim_samples_count * sim_proportions[1])
+    event_prediction_count = sim_samples_count - sim_with_time_count - sim_with_number_products_count
+    
+    # Filter simulation tasks by type
+    sim_with_time = sim_df[sim_df["answer"].str.contains('"task": "sim_with_time"')]
+    sim_with_number_products = sim_df[sim_df["answer"].str.contains('"task": "sim_with_number_products"')]
+    event_prediction = sim_df[sim_df["answer"].str.contains('"task": "event_prediction"')]
+    
+    # Sample from simulation tasks
+    sim_samples = pd.concat([
+        sim_with_time.sample(sim_with_time_count, random_state=42),
+        sim_with_number_products.sample(sim_with_number_products_count, random_state=42),
+        event_prediction.sample(event_prediction_count, random_state=42)
+    ])
+    
+    # Sample from verification tasks
+    ver_samples = ver_df.sample(ver_samples_count, random_state=42)
+    
+    # Combine samples
+    combined_samples = pd.concat([sim_samples, ver_samples]).sample(frac=1, random_state=42).reset_index(drop=True)
+    
+    # Save to CSV
+    combined_samples.to_csv(output_csv, index=False, quoting=csv.QUOTE_ALL)
+    print(f"Generated mixed CSV with {len(combined_samples)} samples and saved to {output_csv}")
+
+
+def main_answer():
+    pass
+
+
 if __name__ == "__main__":
-    main()
-    """with open(os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'simulation.csv'), mode="r", newline="", encoding="utf-8") as file:
-        reader = csv.reader(file)
-        next(reader)  # Skip header
-        for i, row in enumerate(reader):
-            if i >= 3:
-                break
-            question, answer = row
-            print(f"Question: {question}\nAnswer: {answer}\n")"""
+    # main_simulation()
+    # main_verification()
+    # sim_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'simulation.csv')
+    # ver_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'verification.csv')
+    # routing_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'routing.csv')
+    # main_routing(sim_csv, ver_csv, routing_csv, tasks_proportions)
+    main_answer()
