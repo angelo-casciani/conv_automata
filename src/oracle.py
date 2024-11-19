@@ -30,7 +30,13 @@ class AnswerVerificationOracle:
             result['expected_answer'] = expected_answer
             expected_answer_formatted = expected_answer.lower().replace(' ', '')
             model_answer_formatted = model_answer.lower().replace('\n', ' ').replace(' ', '')
-            result['verification_result'] = expected_answer_formatted in model_answer_formatted
+            # Check for unrelated questions in routing evaluations
+            if expected_answer == "no_answer":
+                model_answer_formatted = model_answer.lower()
+                if 'uppaal_verification' not in model_answer_formatted and 'factory_simulation' not in model_answer_formatted:
+                    result['verification_result'] = True
+            else:
+                result['verification_result'] = expected_answer_formatted in model_answer_formatted
             print(f"Answer: {model_answer}\nExpected_answer: {result['expected_answer']}\nResult: {result['verification_result']}")
         self.results.append(result)
 

@@ -167,12 +167,54 @@ def main_verification():
 
     write_samples_to_csv('verification', samples)
 
+unrelated_questions = [
+        "What is the weather today?",
+        "Tell me a joke.",
+        "How many legs does a spider have?",
+        "What is the capital of France?",
+        "Translate 'hello' to Spanish.",
+        "What time is it?",
+        "Can you write a poem?",
+        "What's the population of the Earth?",
+        "How do I bake a cake?",
+        "Who won the soccer game yesterday?",
+        "Can you solve this math problem for me?",
+        "What is 2+2?",
+        "Can you describe the Eiffel Tower?",
+        "What is the meaning of life?",
+        "Tell me a fun fact about space.",
+        "How do airplanes fly?",
+        "What is your favorite movie?",
+        "What is the speed of light?",
+        "What is quantum physics?",
+        "Can you sing a song?",
+        "What is the tallest mountain on Earth?",
+        "How does a car engine work?",
+        "What is artificial intelligence?",
+        "How do plants make food?",
+        "Who invented the telephone?",
+        "How far is the moon?",
+        "What is the chemical formula for water?",
+        "Can you summarize the plot of 'Romeo and Juliet'?",
+        "How does a microwave work?",
+        "What are black holes?",
+    ]
+def generate_unrelated_questions(unrelated_questions, number_samples=100):
+    samples = random.choices(unrelated_questions, k=number_samples)
+    questions = []
+    for s in samples:
+        questions.append([s, "no_answer"])
 
-def main_routing(simulation_csv, verification_csv, output_csv, sim_proportions, total_samples=300):
+    write_samples_to_csv('unrelated', questions)
+
+
+def main_routing(simulation_csv, verification_csv, unrelated_csv, output_csv, sim_proportions, total_samples=300):
     sim_df = pd.read_csv(simulation_csv)
     ver_df = pd.read_csv(verification_csv)
-    sim_samples_count = total_samples // 2
-    ver_samples_count = total_samples - sim_samples_count
+    unrel_df = pd.read_csv(unrelated_csv)
+    sim_samples_count = total_samples // 3
+    ver_samples_count = total_samples // 3
+    refuse_samples_count = total_samples - sim_samples_count - ver_samples_count
     sim_with_time_count = int(sim_samples_count * sim_proportions[0])
     sim_with_number_products_count = int(sim_samples_count * sim_proportions[1])
     event_prediction_count = sim_samples_count - sim_with_time_count - sim_with_number_products_count
@@ -185,8 +227,11 @@ def main_routing(simulation_csv, verification_csv, output_csv, sim_proportions, 
         sim_with_number_products.sample(sim_with_number_products_count, random_state=42),
         event_prediction.sample(event_prediction_count, random_state=42)
     ])
+    sim_samples["answer"] = "factory_simulation"
     ver_samples = ver_df.sample(ver_samples_count, random_state=42)
-    combined_samples = pd.concat([sim_samples, ver_samples]).sample(frac=1, random_state=42).reset_index(drop=True)
+    ver_samples["answer"] = "uppaal_verification"
+    unrel_samples = unrel_df.sample(refuse_samples_count, random_state=42)
+    combined_samples = pd.concat([sim_samples, ver_samples, unrel_samples]).sample(frac=1, random_state=42).reset_index(drop=True)
     
     combined_samples.to_csv(output_csv, index=False, quoting=csv.QUOTE_ALL)
     print(f"Generated mixed CSV with {len(combined_samples)} samples and saved to {output_csv}")
@@ -219,9 +264,13 @@ def main_answer(routing_csv_path):
 
 
 if __name__ == "__main__":
-    main_simulation()
-    main_verification()
+    #main_simulation()
+    #main_verification()
+    # generate_unrelated_questions(unrelated_questions)
     sim_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'simulation.csv')
     ver_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'verification.csv')
+    unrel_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'unrelated.csv')
     routing_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'routing.csv')
-    main_routing(sim_csv, ver_csv, routing_csv, tasks_proportions)
+    main_routing(sim_csv, ver_csv, unrel_csv, routing_csv, tasks_proportions)
+
+    
