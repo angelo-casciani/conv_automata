@@ -153,9 +153,9 @@ def main_verification():
 
         question = query_template.format(state=state, state1=state1, state2=state2, time=time)
         uppaal_query = uppaal_query_template.format(
-            state=f"s.{state}",
-            state1=f"s.{state1}",
-            state2=f"s.{state2}",
+            state=f"{state}",
+            state1=f"{state1}",
+            state2=f"{state2}",
             time=time
         )
 
@@ -207,9 +207,9 @@ def main_answer():
 
 if __name__ == "__main__":
     # main_simulation()
-    # main_verification()
-    # sim_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'simulation.csv')
-    # ver_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'verification.csv')
-    # routing_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'routing.csv')
-    # main_routing(sim_csv, ver_csv, routing_csv, tasks_proportions)
-    main_answer()
+    main_verification()
+    sim_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'simulation.csv')
+    ver_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'verification.csv')
+    routing_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'routing.csv')
+    main_routing(sim_csv, ver_csv, routing_csv, tasks_proportions)
+    # main_answer()
