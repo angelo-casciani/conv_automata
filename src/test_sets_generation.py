@@ -3,6 +3,9 @@ import os
 import pandas as pd
 import random
 
+import llm_factory_interface as fa
+import uppaal_interface as up
+
 
 simulation_tasks = {
     "sim_with_time": [
@@ -48,8 +51,6 @@ simulation_tasks = {
          {"task": "event_prediction", "simulation_time": "", "target_pieces": "", "stations_sequence": "{sequence}".split(", ")}),
     ]
 }
-
-
 time_range_sim = range(200, 5001, 500)
 pieces_range = range(50, 501, 50)
 stations = ["Station1", "Station2", "Station3", "Station4", "Station5"]
@@ -158,7 +159,7 @@ def main_verification():
             state2=f"{state2}",
             time=time
         )
-
+        
         samples.append((
             question, 
             str({"task": "verification", "query_nl": question, "uppaal_query": uppaal_query})
@@ -170,46 +171,57 @@ def main_verification():
 def main_routing(simulation_csv, verification_csv, output_csv, sim_proportions, total_samples=300):
     sim_df = pd.read_csv(simulation_csv)
     ver_df = pd.read_csv(verification_csv)
-    
     sim_samples_count = total_samples // 2
     ver_samples_count = total_samples - sim_samples_count
-    
     sim_with_time_count = int(sim_samples_count * sim_proportions[0])
     sim_with_number_products_count = int(sim_samples_count * sim_proportions[1])
     event_prediction_count = sim_samples_count - sim_with_time_count - sim_with_number_products_count
     
-    # Filter simulation tasks by type
     sim_with_time = sim_df[sim_df["answer"].str.contains('"task": "sim_with_time"')]
     sim_with_number_products = sim_df[sim_df["answer"].str.contains('"task": "sim_with_number_products"')]
     event_prediction = sim_df[sim_df["answer"].str.contains('"task": "event_prediction"')]
-    
-    # Sample from simulation tasks
     sim_samples = pd.concat([
         sim_with_time.sample(sim_with_time_count, random_state=42),
         sim_with_number_products.sample(sim_with_number_products_count, random_state=42),
         event_prediction.sample(event_prediction_count, random_state=42)
     ])
-    
-    # Sample from verification tasks
     ver_samples = ver_df.sample(ver_samples_count, random_state=42)
-    
-    # Combine samples
     combined_samples = pd.concat([sim_samples, ver_samples]).sample(frac=1, random_state=42).reset_index(drop=True)
     
-    # Save to CSV
     combined_samples.to_csv(output_csv, index=False, quoting=csv.QUOTE_ALL)
     print(f"Generated mixed CSV with {len(combined_samples)} samples and saved to {output_csv}")
 
 
-def main_answer():
-    pass
+def main_answer(routing_csv_path):
+    questions = []
+    new_questions = []
+    with open(routing_csv_path, newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        next(reader)
+        for row in reader:
+            question, answer, test_type = row
+            questions.append([question, answer, test_type])
+    
+    for question, answer, test_type in questions:
+        answer = '{' + answer + '}'
+        if test_type == "simulation":
+            new_questions.append([question, fa.interface_with_llm(answer), test_type])
+        else:
+            new_questions.append([question, up.interface_with_llm(answer), test_type])
+    
+    output_path = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'answer.csv')
+    with open(output_path, mode="w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["question", "answer", "evaluation_type"])
+        for question, answer, test_type in new_questions:
+            writer.writerow([question, str(answer).replace("'", '"').replace("{", '').replace("}", ''), test_type])
+    print(f"Generated {len(new_questions)} samples and saved to {output_path}")
 
 
 if __name__ == "__main__":
-    # main_simulation()
+    main_simulation()
     main_verification()
     sim_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'simulation.csv')
     ver_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'verification.csv')
     routing_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'routing.csv')
     main_routing(sim_csv, ver_csv, routing_csv, tasks_proportions)
-    # main_answer()
