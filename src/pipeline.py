@@ -275,7 +275,7 @@ def evaluate_performance(choice_llm, lang_chain, llm_answer, test_filename, info
     for el in questions:
         question = el[0]
         expected_answer = el[1]
-        test_type = el[2]
+        # test_type = el[2]
         oracle.add_question_expected_answer_pair(question, expected_answer)
         if test_filename == 'simulation.csv':
             prompt, answer = produce_answer_simulation(question, choice_llm, lang_chain, None)
@@ -283,11 +283,11 @@ def evaluate_performance(choice_llm, lang_chain, llm_answer, test_filename, info
             prompt, answer = produce_answer_uppaal(question, choice_llm, lang_chain, None)
         elif test_filename == 'routing.csv':
             prompt, answer = produce_answer_interface_llm(question, choice_llm, llm_answer, 'routing')
-        elif test_filename == 'answer.csv':
+        """elif test_filename == 'answer.csv':
             if test_type == 'simulation':
                 prompt, answer = produce_answer_simulation(question, choice_llm, lang_chain, llm_answer)
             elif test_type == 'verification':
-                prompt, answer = produce_answer_uppaal(question, choice_llm, lang_chain, llm_answer)
+                prompt, answer = produce_answer_uppaal(question, choice_llm, lang_chain, llm_answer)"""
         oracle.verify_answer(prompt, question, answer)
         count += 1
         print(f'Processing answer for question {count} of {len(questions)}...')
