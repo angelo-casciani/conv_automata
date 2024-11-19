@@ -13,5 +13,5 @@
   "template-mistral": "<s>[INST]\n<<SYS>>\n{system_message}\n<</SYS>>\n<<CONTEXT>>\n{context}\n<</CONTEXT>>\n<<QUESTION>>\n{question}\n<</QUESTION>>\n<<ANSWER>> [/INST]",
   "template-llama_instruct": "<|begin_of_text|><|start_header_id|>system<|end_header_id|> {system_message}\n<|eot_id|><|start_header_id|>user<|end_header_id|>\nHere is the context: {context}\nHere is the user question: {question}\n<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
   "template-qwen": "<|im_start|>system\n{system_message}<|im_end|>\n<|im_start|>user\nHere is the context: {context}\nHere is the user question: {question}<|im_end|>\n<|im_start|>assistant\n",
-  "template-generic": "{system_message}\nHere is the context: {context}\nHere is the user question: {question}\n"
+  "template-generic": "{system_message}\nHere is the context: {context}\nHere is the user question: {question}\nAnswer: "
 }

@@ -145,10 +145,12 @@ def initialize_chain(model_id, hf_auth, max_new_tokens):
 def parse_llm_answer(compl_answer, llm_choice):
     if llm_choice in llama3_models:
         delimiter = '<|start_header_id|>assistant<|end_header_id|>'
-    elif 'Question:' in compl_answer:
-        delimiter = 'Answer: '
-    else:
+    elif llm_choice in mistral_models:
         delimiter = '[/INST]'
+    elif llm_choice in qwen_models:
+        delimiter = '<|im_start|>assistant'
+    else:
+        delimiter = 'Answer:'
 
     index = compl_answer.find(delimiter)
     prompt = compl_answer[:index + len(delimiter)]
@@ -272,7 +274,7 @@ def evaluate_performance(choice_llm, lang_chain, llm_answer, test_filename, info
     prompt, answer = '', ''
     for el in questions:
         question = el[0]
-        expected_answer = el[1].replace(' ', '')
+        expected_answer = el[1]
         test_type = el[2]
         oracle.add_question_expected_answer_pair(question, expected_answer)
         if test_filename == 'simulation.csv':
@@ -286,7 +288,7 @@ def evaluate_performance(choice_llm, lang_chain, llm_answer, test_filename, info
                 prompt, answer = produce_answer_simulation(question, choice_llm, lang_chain, llm_answer)
             elif test_type == 'verification':
                 prompt, answer = produce_answer_uppaal(question, choice_llm, lang_chain, llm_answer)
-        oracle.verify_answer(prompt, question, answer.replace('\n', ' ').replace(' ', ''))
+        oracle.verify_answer(prompt, question, answer)
         count += 1
         print(f'Processing answer for question {count} of {len(questions)}...')
 
