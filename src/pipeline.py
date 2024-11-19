@@ -214,7 +214,7 @@ def produce_answer_uppaal(question, choice, llm_uppaal, llm_answer):
         prompts = json.load(prompt_file)
     automata_data = retrieve_automata()
     sys_mess = prompts.get('system_message_verification', '') + prompts.get('shots_verification', '')
-    context = prompts.get('context_verification', '').replace('STATES', list(automata_data['transitions'].keys()))
+    context = prompts.get('context_verification', '').replace('STATES', str(list(automata_data['transitions'].keys())))
     complete_answer = llm_uppaal.invoke({"question": question,
                                          "context": context,
                                          "system_message": sys_mess})
