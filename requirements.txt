@@ -17,3 +17,4 @@ matplotlib~=3.9.1
 scikit-learn~=1.5.0
 datasets~=2.19.1
 simpy~=4.1.1
+langchain-openai>=0.2.9

@@ -4,6 +4,7 @@ import os
 
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain_core.prompts import PromptTemplate
+from langchain_openai import OpenAI
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, BitsAndBytesConfig, AutoConfig
 from torch import bfloat16
 
@@ -18,6 +19,7 @@ llama3_models = ['meta-llama/Meta-Llama-3-8B-Instruct', 'meta-llama/Meta-Llama-3
 mistral_models = ['mistralai/Mistral-7B-Instruct-v0.2',  'mistralai/Mistral-7B-Instruct-v0.3',
                   'mistralai/Mistral-Nemo-Instruct-2407', 'mistralai/Ministral-8B-Instruct-2410']
 qwen_models = ['Qwen/Qwen2.5-7B-Instruct']
+openai_models = ['gpt-4o-mini', 'gpt-4o', 'babbage-002']
 
 
 def initialize_pipeline(model_identifier, hf_token, max_new_tokens):
@@ -134,8 +136,11 @@ def generate_prompt_template(model_id):
 
 
 def initialize_chain(model_id, hf_auth, max_new_tokens):
-    generate_text = initialize_pipeline(model_id, hf_auth, max_new_tokens)
-    hf_pipeline = HuggingFacePipeline(pipeline=generate_text)
+    if model_id not in openai_models:
+        hf_pipeline = OpenAI()
+    else:
+        generate_text = initialize_pipeline(model_id, hf_auth, max_new_tokens)
+        hf_pipeline = HuggingFacePipeline(pipeline=generate_text)
     prompt = generate_prompt_template(model_id)
     chain = prompt | hf_pipeline
 
