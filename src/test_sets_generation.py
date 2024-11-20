@@ -264,9 +264,9 @@ def main_answer(routing_csv_path):
 
 
 if __name__ == "__main__":
-    #main_simulation()
-    #main_verification()
-    # generate_unrelated_questions(unrelated_questions)
+    main_simulation()
+    main_verification()
+    generate_unrelated_questions(unrelated_questions)
     sim_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'simulation.csv')
     ver_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'verification.csv')
     unrel_csv = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_sets', 'unrelated.csv')
