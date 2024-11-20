@@ -33,6 +33,7 @@ class AnswerVerificationOracle:
             # Check for unrelated questions in routing evaluations
             if expected_answer == "no_answer":
                 model_answer_formatted = model_answer.lower()
+                result['verification_result'] = False
                 if ('uppaal_verification' not in model_answer_formatted and 'factory_simulation' not in model_answer_formatted) or ('uppaal_verification' in model_answer_formatted and 'factory_simulation' in model_answer_formatted):
                     result['verification_result'] = True
             else:
