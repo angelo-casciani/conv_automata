@@ -2,9 +2,9 @@ import datetime
 import json
 import os
 
-from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from langchain_huggingface import HuggingFacePipeline
 from langchain_core.prompts import PromptTemplate
-from langchain_openai import OpenAI
+from openai import OpenAI
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, BitsAndBytesConfig, AutoConfig
 from torch import bfloat16
 
@@ -19,7 +19,7 @@ llama3_models = ['meta-llama/Meta-Llama-3-8B-Instruct', 'meta-llama/Meta-Llama-3
 mistral_models = ['mistralai/Mistral-7B-Instruct-v0.2',  'mistralai/Mistral-7B-Instruct-v0.3',
                   'mistralai/Mistral-Nemo-Instruct-2407', 'mistralai/Ministral-8B-Instruct-2410']
 qwen_models = ['Qwen/Qwen2.5-7B-Instruct']
-openai_models = ['gpt-4o-mini', 'gpt-4o', 'babbage-002']
+openai_models = ['gpt-4o-mini']
 
 
 def initialize_pipeline(model_identifier, hf_token, max_new_tokens):
@@ -135,14 +135,16 @@ def generate_prompt_template(model_id):
     return prompt
 
 
-def initialize_chain(model_id, hf_auth, max_new_tokens):
+def initialize_chain(model_id, hf_auth, openai_auth, max_new_tokens):
     if model_id not in openai_models:
-        hf_pipeline = OpenAI()
-    else:
         generate_text = initialize_pipeline(model_id, hf_auth, max_new_tokens)
         hf_pipeline = HuggingFacePipeline(pipeline=generate_text)
-    prompt = generate_prompt_template(model_id)
-    chain = prompt | hf_pipeline
+        prompt = generate_prompt_template(model_id)
+        chain = prompt | hf_pipeline
+    else:
+        chain = OpenAI(
+            api_key=openai_auth,
+        )
 
     return chain
 
@@ -169,20 +171,42 @@ def produce_answer_interface_llm(question, model_id, llm_chain, answer_phase):
     with open(path_prompts, 'r') as prompt_file:
         prompts = json.load(prompt_file)
     prompt, answer = ('', '')
-    if answer_phase == 'routing':
-        sys_mess = prompts.get('system_message_routing', '')
-        context = prompts.get('context_routing', '')
+    if model_id not in openai_models:
+        if answer_phase == 'routing':
+            sys_mess = prompts.get('system_message_routing', '')
+            context = prompts.get('context_routing', '')
+        elif answer_phase == 'negative_response':
+            sys_mess = prompts.get('system_message_negative', '')
+            context = ''
         complete_answer = llm_chain.invoke({"question": question,
                                             "context": context,
                                             "system_message": sys_mess})
         prompt, answer = parse_llm_answer(complete_answer, model_id)
-    elif answer_phase == 'negative_response':
-        sys_mess = prompts.get('system_message_negative', '')
-        context = ''
-        complete_answer = llm_chain.invoke({"question": question,
-                                            "context": context,
-                                            "system_message": sys_mess})
-        prompt, answer = parse_llm_answer(complete_answer, model_id)
+    else:
+        if answer_phase == 'routing':
+            sys_mess = prompts.get('system_message_routing', '')
+            context = prompts.get('context_routing', '')
+            prompt = f'{sys_mess}\nHere is the context: {context}\n' + f'Here is the user question: {question}\nAnswer: '
+            completion = llm_chain.chat.completions.create(
+                model = model_id,
+                messages = [
+                    {"role": "system", "content": f'{sys_mess}\nHere is the context: {context}\n'},
+                    {"role": "user", "content": f'Here is the user question: {question}\nAnswer: '},
+                ]
+            )
+            answer = completion.choices[0].message.content.strip()
+        elif answer_phase == 'negative_response':
+            sys_mess = prompts.get('system_message_negative', '')
+            context = ''
+            prompt = f'{sys_mess}\nHere is the context: {context}\n' + f'Here is the user question: {question}\nAnswer: '
+            completion = llm_chain.chat.completions.create(
+                model = model_id,
+                messages = [
+                    {"role": "system", "content": f'{sys_mess}\nHere is the context: {context}\n'},
+                    {"role": "user", "content": f'Here is the user question: {question}\nAnswer: '},
+                ]
+            )
+            answer = completion.choices[0].message.content.strip()
 
     return prompt, answer
 
@@ -193,22 +217,49 @@ def produce_answer_simulation(question, choice, llm_simpy, llm_answer):
         prompts = json.load(prompt_file)
     factory_data = retrieve_factory()
     station_names = ', '.join([station for station in factory_data['stations']])
-    sys_mess = prompts.get('system_message_simulation', '') + prompts.get('shots_simulation', '')
-    context = prompts.get('context_simulation', '').replace('LABELS', station_names)
-    complete_answer = llm_simpy.invoke({"question": question,
-                                        "context": context,
-                                        "system_message": sys_mess})
-    prompt, answer = parse_llm_answer(complete_answer, choice)
-    print(complete_answer)
-
-    if llm_answer is not None:
-        results = factory_interface.interface_with_llm(answer)
-        sys_mess = prompts.get('system_message_results_sim', '')
-        context = f"The labels for the stations are: {station_names}\nResults from the simulation: {results}"
-        complete_answer = llm_answer.invoke({"question": question,
+    if choice not in openai_models:
+        sys_mess = prompts.get('system_message_simulation', '') + prompts.get('shots_simulation', '')
+        context = prompts.get('context_simulation', '').replace('LABELS', station_names)
+        complete_answer = llm_simpy.invoke({"question": question,
                                             "context": context,
                                             "system_message": sys_mess})
         prompt, answer = parse_llm_answer(complete_answer, choice)
+        print(complete_answer)
+
+        if llm_answer is not None:
+            results = factory_interface.interface_with_llm(answer)
+            sys_mess = prompts.get('system_message_results_sim', '')
+            context = f"The labels for the stations are: {station_names}\nResults from the simulation: {results}"
+            complete_answer = llm_answer.invoke({"question": question,
+                                                "context": context,
+                                                "system_message": sys_mess})
+            prompt, answer = parse_llm_answer(complete_answer, choice)
+    else:
+        sys_mess = prompts.get('system_message_simulation', '') + prompts.get('shots_simulation', '')
+        context = prompts.get('context_simulation', '').replace('LABELS', station_names)
+        prompt = f'{sys_mess}\nHere is the context: {context}\n' + f'Here is the user question: {question}\nAnswer: '
+        completion = llm_simpy.chat.completions.create(
+            model = choice,
+            messages = [
+                {"role": "system", "content": f'{sys_mess}\nHere is the context: {context}\n'},
+                {"role": "user", "content": f'Here is the user question: {question}\nAnswer: '},
+            ]
+        )
+        answer = completion.choices[0].message.content.strip()
+        print(prompt + '\n' + answer)
+
+        if llm_answer is not None:
+            results = factory_interface.interface_with_llm(answer)
+            sys_mess = prompts.get('system_message_results_sim', '')
+            context = f"The labels for the stations are: {station_names}\nResults from the simulation: {results}"
+            completion = llm_answer.chat.completions.create(
+                model = choice,
+                messages = [
+                    {"role": "system", "content": f'{sys_mess}\nHere is the context: {context}\n'},
+                    {"role": "user", "content": f'Here is the user question: {question}\nAnswer: '},
+                ]
+            )
+            answer = completion.choices[0].message.content.strip()
 
     return prompt, answer
 
@@ -218,23 +269,50 @@ def produce_answer_uppaal(question, choice, llm_uppaal, llm_answer):
     with open(path_prompts, 'r') as prompt_file:
         prompts = json.load(prompt_file)
     automata_data = retrieve_automata()
-    sys_mess = prompts.get('system_message_verification', '') + prompts.get('shots_verification', '')
-    context = prompts.get('context_verification', '').replace('STATES', str(list(automata_data['transitions'].keys())))
-    complete_answer = llm_uppaal.invoke({"question": question,
-                                         "context": context,
-                                         "system_message": sys_mess})
-    prompt, answer = parse_llm_answer(complete_answer, choice)
-    print(complete_answer)
-
-    if llm_answer is not None:
-        results = uppaal_interface.interface_with_llm(answer)
-        sys_mess = prompts.get('system_message_results', '')
-        context = f'Results from Uppaal: {results}'
-        complete_answer = llm_answer.invoke({"question": question,
+    if choice not in openai_models:
+        sys_mess = prompts.get('system_message_verification', '') + prompts.get('shots_verification', '')
+        context = prompts.get('context_verification', '').replace('STATES', str(list(automata_data['transitions'].keys())))
+        complete_answer = llm_uppaal.invoke({"question": question,
                                             "context": context,
                                             "system_message": sys_mess})
         prompt, answer = parse_llm_answer(complete_answer, choice)
+        print(complete_answer)
 
+        if llm_answer is not None:
+            results = uppaal_interface.interface_with_llm(answer)
+            sys_mess = prompts.get('system_message_results', '')
+            context = f'Results from Uppaal: {results}'
+            complete_answer = llm_answer.invoke({"question": question,
+                                                "context": context,
+                                                "system_message": sys_mess})
+            prompt, answer = parse_llm_answer(complete_answer, choice)
+    else:
+        sys_mess = prompts.get('system_message_verification', '') + prompts.get('shots_verification', '')
+        context = prompts.get('context_verification', '').replace('STATES', str(list(automata_data['transitions'].keys())))
+        prompt = f'{sys_mess}\nHere is the context: {context}\n' + f'Here is the user question: {question}\nAnswer: '
+        completion = llm_uppaal.chat.completions.create(
+            model = choice,
+            messages = [
+                {"role": "system", "content": f'{sys_mess}\nHere is the context: {context}\n'},
+                {"role": "user", "content": f'Here is the user question: {question}\nAnswer: '},
+            ]
+        )
+        answer = completion.choices[0].message.content.strip()
+        print(prompt + '\n' + answer)
+
+        if llm_answer is not None:
+            results = uppaal_interface.interface_with_llm(answer)
+            sys_mess = prompts.get('system_message_results', '')
+            context = f'Results from Uppaal: {results}'
+            prompt = f'{sys_mess}\nHere is the context: {context}\n' + f'Here is the user question: {question}\nAnswer: '
+            completion = llm_answer.chat.completions.create(
+                model = choice,
+                messages = [
+                    {"role": "system", "content": f'{sys_mess}\nHere is the context: {context}\n'},
+                    {"role": "user", "content": f'Here is the user question: {question}\nAnswer: '},
+                ]
+            )
+            answer = completion.choices[0].message.content.strip()
     return prompt, answer
 
 
@@ -267,7 +345,7 @@ def live_prompting(choice_llm, model_factory, model_uppaal, model_answer, info_r
         if query.lower() == 'quit':
             print("Exiting the chat.")
             break
-
+        
         generate_response(query, current_datetime, choice_llm, model_factory, model_uppaal, model_answer, info_run)
         print()
 

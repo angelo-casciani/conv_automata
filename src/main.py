@@ -36,9 +36,9 @@ def main():
 
     model_id = args.llm_id
     max_new_tokens = args.max_new_tokens
-    chain_factory = initialize_chain(model_id, HF_AUTH, max_new_tokens)
-    chain_uppaal = initialize_chain(model_id, HF_AUTH, max_new_tokens)
-    chain_answer = initialize_chain(model_id, HF_AUTH, max_new_tokens)
+    chain_factory = initialize_chain(model_id, HF_AUTH, OPENAI_API_KEY, max_new_tokens)
+    chain_uppaal = initialize_chain(model_id, HF_AUTH, OPENAI_API_KEY, max_new_tokens)
+    chain_answer = initialize_chain(model_id, HF_AUTH, OPENAI_API_KEY, max_new_tokens)
 
     run_data = {
         'LLM ID': model_id,
