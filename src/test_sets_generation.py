@@ -135,7 +135,7 @@ queries_verification = [
      "E<> s.{state} && s.x <= {time}"),
     ("If the system reaches {state1}, will it eventually be in {state2}?", 
      "s.{state1} --> s.{state2}"),
-    ("Verify if the automaton reaches the states {state1} and {state2}.",
+    ("Verify if the automaton reaches at least once the states {state1} and {state2}.",
      "E<> (s.{state1} && s.{state2})")
 ]
 time_range_verification = range(10, 51, 5)
@@ -143,7 +143,7 @@ time_range_verification = range(10, 51, 5)
 
 def main_verification():
     samples = []
-    for _ in range(300):
+    for _ in range(299):
         query_template, uppaal_query_template = random.choice(queries_verification)
         state = random.choice(states_verification)
         state1 = random.choice(states_verification)
@@ -163,6 +163,11 @@ def main_verification():
         samples.append((
             question, 
             str({"task": "verification", "query_nl": question, "uppaal_query": uppaal_query})
+        ))
+
+    samples.append((
+            "Is there a deadlock at some point?", 
+            str({"task": "verification", "query_nl": "Is there a deadlock at some point?", "uppaal_query": "E<> deadlock"})
         ))
 
     write_samples_to_csv('verification', samples)
@@ -191,6 +196,8 @@ unrelated_questions = [
         "What is the tallest mountain on Earth?",
         "How does a car engine work?",
         "What is artificial intelligence?",
+        "What is the weather like in Paris?",
+        "What is a neural network?",
         "How do plants make food?",
         "Who invented the telephone?",
         "How far is the moon?",
