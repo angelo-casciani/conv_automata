@@ -252,6 +252,7 @@ def produce_answer_simulation(question, choice, llm_simpy, llm_answer):
             results = factory_interface.interface_with_llm(answer)
             sys_mess = prompts.get('system_message_results_sim', '')
             context = f"The labels for the stations are: {station_names}\nResults from the simulation: {results}"
+            prompt = f'{sys_mess}\nHere is the context: {context}\n' + f'Here is the user question: {question}\n'
             completion = llm_answer.chat.completions.create(
                 model = choice,
                 messages = [
