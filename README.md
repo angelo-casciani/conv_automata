@@ -1,6 +1,6 @@
-# conv_automata
+# A Conversational Framework for Faithful Multi-Perspective Analysis of Production Processes
 
-Proof of concept for enabling conversational reasoning over the automaton representing the LEGO factory.
+Source code, datasets, and instructions for replicating the experiments of the paper "_A Conversational Framework for Faithful Multi-Perspective Analysis of Production Processes_".
 
 ## Installation
 
