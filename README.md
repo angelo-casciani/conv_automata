@@ -32,7 +32,7 @@ Please note that this software leverages the open-source and closed-source LLMs 
 | Model | HuggingFace Link |
 |-----------|-----------|
 | meta-llama/Meta-Llama-3-8B-Instruct | [HF link](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct) |
-| meta-llama/Llama-3.1-8B-Instruct | [HF link](https://huggingface.co/meta-llama/Meta-Llama-3.1-8B-Instruct) |
+| meta-llama/Meta-Llama-3.1-8B-Instruct | [HF link](https://huggingface.co/meta-llama/Meta-Llama-3.1-8B-Instruct) |
 | meta-llama/Llama-3.2-1B-Instruct | [HF Link](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct)|
 | meta-llama/Llama-3.2-3B-Instruct | [HF link](https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct) |
 | mistralai/Mistral-7B-Instruct-v0.2 | [HF link](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2) |
@@ -57,7 +57,7 @@ Eventually, you can proceed by going in the project directory and executing comm
 python3 main.py --llm_id Qwen/Qwen2.5-7B-Instruct --modality live --max_new_tokens 512
 ```
 
-To run an evaluation for the simulation (*evaluation-simulation*), for the verification, or for the routing):
+To run an evaluation for the simulation (*evaluation-simulation*), for the verification (*evaluation-verification*), or for the routing (*evaluation-routing*):
 ```bash
 python3 main.py --llm_id Qwen/Qwen2.5-7B-Instruct --modality evaluation-simulation --max_new_tokens 512
 ```
