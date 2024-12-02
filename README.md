@@ -54,12 +54,12 @@ Before running the project, it is necessary to insert in the *.env* file your pe
 
 Eventually, you can proceed by going in the project directory and executing commands as the following one:
 ```bash
-python3 main.py --llm_id meta-llama/Meta-Llama-3.1-8B-Instruct --modality live --max_new_tokens 512
+python3 main.py --llm_id Qwen/Qwen2.5-7B-Instruct --modality live --max_new_tokens 512
 ```
 
 To run an evaluation for the simulation (*evaluation-simulation*), for the verification, or for the routing):
 ```bash
-python3 main.py --llm_id meta-llama/Meta-Llama-3.1-8B-Instruct --modality evaluation-simulation --max_new_tokens 512
+python3 main.py --llm_id Qwen/Qwen2.5-7B-Instruct --modality evaluation-simulation --max_new_tokens 512
 ```
 
 To generate new test sets for the three supported evaluation, run the script *test_sets_generation.py* before running an evaluation.
