@@ -246,7 +246,7 @@ def produce_answer_simulation(question, choice, llm_simpy, llm_answer):
             ]
         )
         answer = completion.choices[0].message.content.strip()
-        # print(prompt + '\n' + answer)
+        print(prompt + '\n' + answer)
 
         if llm_answer is not None:
             results = factory_interface.interface_with_llm(answer)
@@ -299,7 +299,7 @@ def produce_answer_uppaal(question, choice, llm_uppaal, llm_answer):
             ]
         )
         answer = completion.choices[0].message.content.strip()
-        # print(prompt + '\n' + answer)
+        print(prompt + '\n' + answer)
 
         if llm_answer is not None:
             results = uppaal_interface.interface_with_llm(answer)
