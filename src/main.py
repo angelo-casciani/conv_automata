@@ -17,7 +17,7 @@ warnings.filterwarnings('ignore')
 
 def parse_arguments():
     parser = ArgumentParser(description="Run LLM Generation.")
-    parser.add_argument('--llm_id', type=str, default='meta-llama/Meta-Llama-3.1-8B-Instruct', help='LLM model identifier')
+    parser.add_argument('--llm_id', type=str, default='Qwen/Qwen2.5-7B-Instruct', help='LLM model identifier')
     parser.add_argument('--max_new_tokens', type=int, help='Maximum number of tokens to generate', default=512)
     parser.add_argument('--modality', type=str, default='live', help='Modality to use between: evaluation-simulation, evaluation-verification, evaluation-routing, live')
     args = parser.parse_args()
