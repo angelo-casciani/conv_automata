@@ -145,4 +145,4 @@ python3 test_sets_generation.py
 ```
 
 ## License
-Distributed under the GNU GENERAL PUBLIC LICENSE License. See [LICENSE](LICENSE) for more information.
+Distributed under the GNU GPL License. See [LICENSE](LICENSE) for more information.
