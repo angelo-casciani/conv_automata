@@ -30,7 +30,7 @@ As illustrated in the Figure, the Conversational Layer includes a set of LLMs: t
 ├── tests             # sources for the evaluation
 |   ├── outputs       # outputs of the live convesations
 |   ├── test_sets     # test sets employed during the evaluation
-|   └── validation    # evaluation results for each run
+|   └── validation    # quantitative evaluation results for each run
 └──...
 ```
 
