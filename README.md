@@ -22,12 +22,12 @@ As illustrated in the Figure, the Conversational Layer includes a set of LLMs: t
 .
 ├── images            # figures for the README file
 |   └──...
-├── models            # Automaton and simulation parameters of the factory
+├── models            # automaton and simulation parameters of the factory
 |   └── ...
 ├── src               # source code of proposed approach
 |   ├── uppaal        # source code of the Uppaal verifier
 |   └── ...
-├── tests             # sources for retrieval evaluation
+├── tests             # sources for the evaluation
 |   ├── outputs       # outputs of the live convesations
 |   ├── test_sets     # test sets employed during the evaluation
 |   └── validation    # evaluation results for each run
