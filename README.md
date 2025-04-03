@@ -53,6 +53,10 @@ Run the following command to install the necessary packages along with their dep
 pip install -r requirements.txt
 ```
 
+Visit the [official Uppaal downloads page](https://uppaal.org/downloads/#downloads) and download the appropriate version for your OS.  
+Run the installer and follow the instructions on the website.  
+Upon first launch, request and register a valid license key when prompted.  
+
 Set up a [HuggingFace token](https://huggingface.co/) and/or an [OpenAI API key](https://platform.openai.com/overview) in the `.env` file in the root directory:
     ```env
     HF_TOKEN=<your token, should start with hf_>
