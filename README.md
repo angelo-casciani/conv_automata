@@ -28,7 +28,7 @@ As illustrated in the Figure, the Conversational Layer includes a set of LLMs: t
 |   ├── uppaal        # source code of the Uppaal verifier
 |   └── ...
 ├── tests             # sources for the evaluation
-|   ├── outputs       # outputs of the live convesations
+|   ├── outputs       # outputs of the live conversations
 |   ├── test_sets     # test sets employed during the evaluation
 |   └── validation    # quantitative evaluation results for each run
 └──...
@@ -113,7 +113,7 @@ A comprehensive list of commands can be found in `src/cmd4tests.sh`.
 
 ### Simulation experiments
 
-To reprodure the experiments for the _simulation_ evaluation, for example:
+To reproduce the experiments for the _simulation_ evaluation, for example:
 ```bash
 cd src
 python3 main.py --llm_id Qwen/Qwen2.5-7B-Instruct --modality evaluation-simulation --max_new_tokens 512
@@ -123,7 +123,7 @@ The results will be stored in a `.txt` file reporting all the information for th
 
 ### Verification experiments
 
-To reprodure the experiments for the _verification_ evaluation, for example:
+To reproduce the experiments for the _verification_ evaluation, for example:
 ```bash
 cd src
 python3 main.py --llm_id gpt-4o-mini --modality evaluation-verification --max_new_tokens 512
@@ -133,7 +133,7 @@ The results will be stored in a `.txt` file reporting all the information for th
 
 ### Routing experiments
 
-To reprodure the experiments for the _routing_ evaluation, for example:
+To reproduce the experiments for the _routing_ evaluation, for example:
 ```bash
 cd src
 python3 main.py --llm_id mistralai/Mistral-7B-Instruct-v0.3 --modality evaluation-routing --max_new_tokens 512
@@ -143,7 +143,7 @@ The results will be stored in a `.txt` file reporting all the information for th
 
 ### Generation of New Test Sets
 
-To generate new test sets for the three supported evaluation, run the script `test_sets_generation.py` before running an evaluation.
+To generate new test sets for the three supported evaluations, run the script `test_sets_generation.py` before running an evaluation.
 ```bash
 python3 test_sets_generation.py
 ```
