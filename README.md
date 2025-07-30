@@ -150,3 +150,31 @@ python3 test_sets_generation.py
 
 ## License
 Distributed under the GNU GPL License. See [LICENSE](LICENSE) for more information.
+
+## Citation
+
+If you use this repository in your research, please cite:
+
+```bibtex
+@inproceedings{DBLP:conf/caise/CascianiLMM25,
+  author       = {Angelo Casciani and
+                  Livia Lestingi and
+                  Andrea Marrella and
+                  Andrea Matta},
+  editor       = {John Krogstie and
+                  Stefanie Rinderle{-}Ma and
+                  Gerti Kappel and
+                  Henderik A. Proper},
+  title        = {A Conversational Framework for Faithful Multi-perspective Analysis
+                  of Production Systems},
+  booktitle    = {Advanced Information Systems Engineering - 37th International Conference,
+                  CAiSE 2025, Vienna, Austria, June 16-20, 2025, Proceedings, Part {I}},
+  series       = {Lecture Notes in Computer Science},
+  volume       = {15701},
+  pages        = {163--181},
+  publisher    = {Springer},
+  year         = {2025},
+  url          = {https://doi.org/10.1007/978-3-031-94569-4\_10},
+  doi          = {10.1007/978-3-031-94569-4\_10}
+}
+```
