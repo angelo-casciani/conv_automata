@@ -1,6 +1,6 @@
 # A Conversational Framework for Faithful Multi-Perspective Analysis of Production Processes
 
-Source code, datasets, and instructions for the paper "_A Conversational Framework for Faithful Multi-Perspective Analysis of Production Processes_".
+Source code, datasets, and instructions for the paper [A Conversational Framework for Faithful Multi-Perspective Analysis of Production Processes](https://link.springer.com/chapter/10.1007/978-3-031-94569-4_10).
 
 ## About
 
