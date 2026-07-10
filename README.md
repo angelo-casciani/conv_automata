@@ -1,5 +1,10 @@
 # A Conversational Framework for Faithful Multi-Perspective Analysis of Production Processes
 
+[![Sapienza](https://img.shields.io/badge/Sapienza_University_of_Rome-blue?style=flatlabelColor=781A2D&color=781A2D&logoColor=white)](https://www.diag.uniroma1.it/gruppi-di-ricerca/25462)
+[![DOI](https://img.shields.io/badge/DOI-/zenodo.21293424-blue.svg)](https://doi.org/10.5281/zenodo.21293424)
+[![Version](https://img.shields.io/badge/release-v1.0.0-blue)](https://github.com/angelo-casciani/conv_automata/releases)
+[![GitHub license](https://img.shields.io/github/license/angelo-casciani/conv_automata)](https://github.com/angelo-casciani/conv_automata/blob/main/LICENSE)
+
 Source code, datasets, and instructions for the paper [A Conversational Framework for Faithful Multi-Perspective Analysis of Production Processes](https://link.springer.com/chapter/10.1007/978-3-031-94569-4_10).
 
 ## About
